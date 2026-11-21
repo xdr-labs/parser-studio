@@ -65,6 +65,32 @@ describe('review-only JSONata source selector mapping',()=>{
   expect(output.counts).toMatchObject({total:2,matched:2,extracted:2,normalized:2,failures:0});
   expect(output.events[0]?.normalized).toMatchObject({srcip:'192.0.2.10',dstip:'198.51.100.20'});
  });
+ it.each(['USER_EDITED','APPROVED'] as const)('marks proposals that would replace a %s mapping blocked during review',async origin=>{
+  const {draft:base,suite}=setup();
+  const draft:ParserDraft={...base,mappings:base.mappings.map(mapping=>mapping.id==='s'
+   ?{...mapping,target:'manual_src',authoring:{version:1,origin}}:mapping)};
+  const {sha256}=await createJsonataMappingPrompt(suite,draft);
+  const reviewed=await reviewJsonataMapping(answer(sha256,2,[
+   {expression:'$.src_ip',target:'srcip'},
+  ]),suite,draft,sha256);
+  expect(reviewed.ok).toBe(true);
+  if(!reviewed.ok)return;
+  expect(reviewed.rows).toMatchObject([{status:'BLOCKED',reason:'Human mapping takes precedence: a user-edited or approved mapping already controls this source. Keep it or edit it in Map Fields.'}]);
+  expect(applyReviewedJsonataMapping(draft,suite,reviewed.rows)).toMatchObject({ok:false});
+ });
+ it('marks an identical protected mapping unchanged',async()=>{
+  const {draft:base,suite}=setup();
+  const draft:ParserDraft={...base,mappings:base.mappings.map(mapping=>mapping.id==='s'
+   ?{...mapping,target:'srcip',type:'ip',authoring:{version:1,origin:'APPROVED'}}:mapping),
+   guided:{...base.guided!,groups:{...base.guided!.groups,s:'top_fields'}}};
+  const {sha256}=await createJsonataMappingPrompt(suite,draft);
+  const reviewed=await reviewJsonataMapping(answer(sha256,2,[
+   {expression:'$.src_ip',target:'srcip'},
+  ]),suite,draft,sha256);
+  expect(reviewed.ok).toBe(true);
+  if(!reviewed.ok)return;
+  expect(reviewed.rows).toMatchObject([{status:'UNCHANGED',reason:'This official mapping is already present.'}]);
+ });
  it('rejects stale SHA, extra response fields, unknown contract and excess size',async()=>{
   const {draft,suite}=setup();
   const {sha256}=await createJsonataMappingPrompt(suite,draft);

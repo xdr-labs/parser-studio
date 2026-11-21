@@ -25,13 +25,15 @@ async function prepareMapping(page:Page,lateIp:string){
   const map=page.getByLabel('Map Fields stage');
   const vendors=map.locator('details.normalization-vendor-list');
   if(await vendors.count())await vendors.locator('summary').click();
-  const rows=map.locator('article.normalization-map-row');
-  const srcIndex=await rows.evaluateAll(nodes=>nodes.findIndex(node=>
-    (node.querySelector('input[aria-label^="Source field "]') as HTMLInputElement|null)?.value==='srcip'));
-  expect(srcIndex).toBeGreaterThanOrEqual(0);
-  const target=rows.nth(srcIndex).locator('input[aria-label^="Stellar field "]');
+  // The row is found by its canonical source path, not by its position: an edit moves a row between the
+  // standard and the vendor section, and a position kept from before the edit then names another row.
+  const target=map.locator('article.normalization-map-row[data-source-path="srcip"]')
+    .locator('input[aria-label^="Stellar field "]');
+  await expect(target).toHaveCount(1);
   await target.fill('srcip_tmp');
+  await expect(target).toHaveValue('srcip_tmp');
   await target.fill('srcip');
+  await expect(target).toHaveValue('srcip');
   return map;
 }
 

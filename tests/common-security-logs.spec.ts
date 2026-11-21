@@ -42,22 +42,20 @@ test('common PAN-OS traffic syslog is parsed automatically and maps core fields'
     .toContainText('1 of 1 log event structurally parsed',{timeout:15_000});
   await openMappings(page);
   const editor=page.getByLabel('Field mapping editor');
+  // A mapping row is identified by its canonical source path (data-source-path),
+  // the value the generated parser reads, not by the label shown to the user.
   const expectMapping=async(source:string,target:string)=>{
-    const inputs=editor.locator('input[aria-label^="Source field "]');
-    const index=await inputs.evaluateAll((nodes,wanted)=>{
-      const node=nodes.find(item=>(item as HTMLInputElement).value===wanted);
-      const match=node?.getAttribute('aria-label')?.match(/^Source field (\d+)$/);
-      return match ? Number(match[1]) : -1;
-    },source);
-    expect(index,'source field '+source+' should be visible').toBeGreaterThanOrEqual(0);
-    await expect(editor.getByLabel('Stellar field '+index,{exact:true})).toHaveValue(target);
+    const row=editor.locator('article.normalization-map-row[data-source-path="'+source+'"]');
+    await expect(row,'one mapping row for source '+source).toHaveCount(1);
+    await expect(row.locator('input[aria-label^="Source field "]')).toHaveValue(source);
+    await expect(row.locator('input[aria-label^="Stellar field "]')).toHaveValue(target);
   };
-  await expectMapping('parserstudio_source.generic.fields.src','srcip');
-  await expectMapping('parserstudio_source.generic.fields.dst','dstip');
-  await expectMapping('parserstudio_source.generic.fields.sport','srcport');
-  await expectMapping('parserstudio_source.generic.fields.dport','dstport');
-  await expectMapping('parserstudio_source.generic.fields.protocol','proto_name');
-  await expectMapping('parserstudio_source.generic.fields.action','action');
+  await expectMapping('generic.fields.src','srcip');
+  await expectMapping('generic.fields.dst','dstip');
+  await expectMapping('generic.fields.sport','srcport');
+  await expectMapping('generic.fields.dport','dstport');
+  await expectMapping('generic.fields.protocol','proto_name');
+  await expectMapping('generic.fields.action','action');
 });
 
 
@@ -108,29 +106,27 @@ test('BIG-IP ASM KV maps network fields but keeps HTTPS application label vendor
   await analyze(page,BIGIP);
   await openMappings(page);
   const editor=page.getByLabel('Field mapping editor');
+  // A mapping row is identified by its canonical source path (data-source-path),
+  // the value the generated parser reads, not by the label shown to the user.
   const expectMapping=async(source:string,target:string)=>{
-    const inputs=editor.locator('input[aria-label^="Source field "]');
-    const index=await inputs.evaluateAll((nodes,wanted)=>{
-      const node=nodes.find(item=>(item as HTMLInputElement).value===wanted);
-      const match=node?.getAttribute('aria-label')?.match(/^Source field (\d+)$/);
-      return match ? Number(match[1]) : -1;
-    },source);
-    expect(index,'source field '+source+' should be visible').toBeGreaterThanOrEqual(0);
-    await expect(editor.getByLabel('Stellar field '+index,{exact:true})).toHaveValue(target);
+    const row=editor.locator('article.normalization-map-row[data-source-path="'+source+'"]');
+    await expect(row,'one mapping row for source '+source).toHaveCount(1);
+    await expect(row.locator('input[aria-label^="Source field "]')).toHaveValue(source);
+    await expect(row.locator('input[aria-label^="Stellar field "]')).toHaveValue(target);
   };
-  await expectMapping('parserstudio_source.generic.fields.ip_client','srcip');
-  await expectMapping('parserstudio_source.generic.fields.dest_ip','dstip');
+  await expectMapping('generic.fields.ip_client','srcip');
+  await expectMapping('generic.fields.dest_ip','dstip');
   // The observed HTTPS application label cannot establish TCP/UDP transport.
   // Preserve the vendor port instead of silently claiming Stellar L4 semantics.
-  await expectMapping('parserstudio_source.generic.fields.dest_port','dest_port');
+  await expectMapping('generic.fields.dest_port','dest_port');
   // BIG-IP's HTTPS value is an application-layer label, not a transport
   // protocol name. Preserve it as a vendor field rather than claiming Stellar
   // L4 proto_name compatibility.
-  await expectMapping('parserstudio_source.generic.fields.protocol','protocol');
-  const vendorSources=await editor.locator('article.normalization-map-row.custom input[aria-label^="Source field "]')
-    .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
-  expect(vendorSources).toContain('parserstudio_source.generic.fields.protocol');
-  expect(vendorSources).toContain('parserstudio_source.generic.fields.dest_port');
+  await expectMapping('generic.fields.protocol','protocol');
+  const vendorSources=await editor.locator('article.normalization-map-row.custom')
+    .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-source-path')));
+  expect(vendorSources).toContain('generic.fields.protocol');
+  expect(vendorSources).toContain('generic.fields.dest_port');
 });
 
 
@@ -153,15 +149,13 @@ test('common EDR JSON gets automatic Stellar mappings instead of leaving every f
   await analyze(page,raw);
   await openMappings(page);
   const editor=page.getByLabel('Field mapping editor');
+  // A mapping row is identified by its canonical source path (data-source-path),
+  // the value the generated parser reads, not by the label shown to the user.
   const expectMapping=async(source:string,target:string)=>{
-    const inputs=editor.locator('input[aria-label^="Source field "]');
-    const index=await inputs.evaluateAll((nodes,wanted)=>{
-      const node=nodes.find(item=>(item as HTMLInputElement).value===wanted);
-      const match=node?.getAttribute('aria-label')?.match(/^Source field (\d+)$/);
-      return match ? Number(match[1]) : -1;
-    },source);
-    expect(index,'source field '+source+' should be visible').toBeGreaterThanOrEqual(0);
-    await expect(editor.getByLabel('Stellar field '+index,{exact:true})).toHaveValue(target);
+    const row=editor.locator('article.normalization-map-row[data-source-path="'+source+'"]');
+    await expect(row,'one mapping row for source '+source).toHaveCount(1);
+    await expect(row.locator('input[aria-label^="Source field "]')).toHaveValue(source);
+    await expect(row.locator('input[aria-label^="Stellar field "]')).toHaveValue(target);
   };
   await expectMapping('timestamp','timestamp');
   // DetectionSummaryEvent is a vendor event family, not a Stellar ML job event_type.

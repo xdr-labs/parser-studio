@@ -117,6 +117,10 @@ function shortRfc5424Structured(raw:string):Record<string,unknown>|null{
   };
 }
 
+// Records keyed by names read from a log are created without a prototype (Object.create(null)), so a
+// source key such as toString, valueOf or hasOwnProperty is plain data: a lookup of a key that is not
+// there yet returns undefined instead of an inherited Object.prototype member. The generated Ruby
+// uses a Hash, which never had inherited members.
 const UNSAFE_SOURCE_KEYS=new Set(['__proto__','constructor','prototype']);
 
 function sourceKeySafe(key:string):boolean{
@@ -153,7 +157,7 @@ function bracketColonKv(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(inner).byteLength>8192)return null;
   const segments=splitEscaped(inner,';');
   if(!segments)return null;
-  const body:Record<string,unknown>={};
+  const body:Record<string,unknown>=Object.create(null);
   for(const rawSegment of segments){
     const segment=rawSegment.replace(ASCII_EDGE_SPACE,'');
     if(!segment)continue;
@@ -183,7 +187,7 @@ function junosRfc5424Sd(raw:string):Record<string,unknown>|null{
   const head=/^junos@[A-Za-z0-9.:-]{1,64}/u.exec(inner);
   if(!head)return null;
   let pos=head[0].length;
-  const fields:Record<string,unknown>={};
+  const fields:Record<string,unknown>=Object.create(null);
   while(pos<inner.length){
     if(inner[pos]!==' ')return null;
     pos++;
@@ -235,7 +239,7 @@ function commaKv(raw:string):Record<string,unknown>|null{
     value.length>1&&[':',','].includes(value[value.length-1]!)?value.slice(0,-1):value);
   if(tokens.length<8||tokens.length>64||
      tokens.some(value=>value.length<1||new TextEncoder().encode(value).byteLength>256))return null;
-  const fields:Record<string,unknown>={};
+  const fields:Record<string,unknown>=Object.create(null);
   for(const rawSegment of parts.slice(1)){
     const segment=rawSegment.replace(ASCII_EDGE_SPACE,'');
     if(!segment)continue;
@@ -291,8 +295,8 @@ function spaceKv(raw:string):Record<string,unknown>|null{
     value.length>1&&[':',','].includes(value[value.length-1]!)?value.slice(0,-1):value):[];
   if(prefix&&(tokens.length<2||tokens.length>16||
     tokens.some(value=>!value||new TextEncoder().encode(value).byteLength>256)))return null;
-  const fields:Record<string,unknown>={};
-  const atoms:Record<string,unknown>={};
+  const fields:Record<string,unknown>=Object.create(null);
+  const atoms:Record<string,unknown>=Object.create(null);
   for(let index=0;index<entries.length;index++){
     const entry=entries[index]!;
     if(!sourceKeySafe(entry.key)||Object.prototype.hasOwnProperty.call(fields,entry.key))return null;
@@ -348,7 +352,7 @@ function validBsdClock(month:string,dayText:string,time:string):boolean{
 
 function scanProfileTokens(raw:string,start:number):{tokens:string[];kv:Record<string,unknown>;groups:string[]}|null{
   if(start<0||start>raw.length||new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
-  const tokens:string[]=[],groups:string[]=[];const kv:Record<string,unknown>={};let pos=start,count=0;
+  const tokens:string[]=[],groups:string[]=[];const kv:Record<string,unknown>=Object.create(null);let pos=start,count=0;
   while(pos<raw.length){
     while(pos<raw.length&&/[ \t\n\r\f\v]/u.test(raw[pos]!))pos++;
     if(pos===raw.length)break;
@@ -599,7 +603,7 @@ function delimitedCommaKv(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192)return null;
   const parts=splitEscaped(raw,',');
   if(!parts||parts.length<4)return null;
-  const fields:Record<string,unknown>={};let prefix='';let parsed=0;
+  const fields:Record<string,unknown>=Object.create(null);let prefix='';let parsed=0;
   const safe=/^[A-Za-z0-9][A-Za-z0-9 ._:/()#-]{0,127}$/u;
   for(let index=0;index<parts.length;index++){
     const segment=parts[index]!.replace(ASCII_EDGE_SPACE,'');
@@ -805,7 +809,7 @@ function bracketColonKvBody(text:string):Record<string,unknown>|null{
   const inner=text.slice(1,-1);
   const segments=splitEscaped(inner,';');
   if(!segments)return null;
-  const body:Record<string,unknown>={};
+  const body:Record<string,unknown>=Object.create(null);
   for(const rawSegment of segments){
     const segment=rawSegment.replace(ASCII_EDGE_SPACE,'');
     if(!segment)continue;
@@ -1034,7 +1038,7 @@ function syslogPrefixedKeyValues(raw:string):Record<string,unknown>|null{
      new TextEncoder().encode(prefix).byteLength>1024||
      /[="'{}\[\]|<>\/]/u.test(prefix)||
      /(?:\d{1,3}\.){3}\d{1,3}|(?:[0-9A-Fa-f]{0,4}:){2}|->/u.test(prefix))return null;
-  const fields:Record<string,unknown>={};
+  const fields:Record<string,unknown>=Object.create(null);
   const token=/^([A-Za-z_][A-Za-z0-9_-]{0,63})=(?:"((?:\\["\\]|[^"\\\u0000-\u001f\u007f])*)"|'((?:\\['\\]|[^'\\\u0000-\u001f\u007f])*)'|([^ \t"'\\]+))(?=[ \t]|$)/u;
   while(cursor<message.length){
     const match=token.exec(message.slice(cursor));
@@ -1087,7 +1091,7 @@ export function envelopedJsonDeclined(raw:string):boolean{
   return boundedEnvelopeJson(message)===null;
 }
 /** Modes that read a CEF/LEEF event with the CEF/LEEF grammar. */
-export const GENERIC_FAMILY_MODES:readonly string[]=['structured_family_cef','structured_family_leef','syslog_envelope_cef','syslog_envelope_leef','leef2_implicit_tab'];
+export const GENERIC_FAMILY_MODES:readonly string[]=['structured_family_cef','structured_family_leef','syslog_envelope_cef','syslog_envelope_leef','syslog_envelope_leef2_implicit_tab','leef2_implicit_tab'];
 
 /**
  * familyGrammar (owner policy D-2): 'dedicated' is set for every newly created Generic Structural parser; a
@@ -1114,6 +1118,23 @@ export function extractGenericStructural(raw:string,profile?:GenericStructuralPr
     const fields=extractLeef2ImplicitTab(raw);
     return fields?{fields,errors:[]}:
       {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};
+  }
+  // LEEF 2.0 also permits the default TAB separator to be implicit. The
+  // standalone helper owns only that narrow body grammar; preserve the
+  // validated Syslog envelope separately and never reinterpret other LEEF
+  // versions or explicit delimiter slots through this route.
+  if(includesLeef&&familyGrammar==='dedicated'){
+    const envelope=parseSyslogEnvelope(raw);
+    if(envelope&&envelope.variant!=='colon_date'&&envelope.message.startsWith('LEEF:2.0|')){
+      const parsed=extractLeef2ImplicitTab(envelope.message);
+      if(parsed){
+        const body={leef_header:parsed.leef_header,leef_extension:parsed.leef_extension};
+        return {fields:{syslog:envelopeToSyslogFields(envelope),body,
+          generic:{mode:'syslog_envelope_leef2_implicit_tab',source_raw:raw,message_raw:envelope.message}},errors:[]};
+      }
+      // An explicit valid delimiter belongs to the existing LEEF grammar;
+      // malformed messages are refused by that same dedicated family route.
+    }
   }
   const claim=familyGrammar==='dedicated'?structuredFamilyClaim(raw):null;
   if(claim){

@@ -85,14 +85,25 @@ export function countUnaddressableSourceValues(fields:Record<string,unknown>):nu
   const addressable=new Set(listSafeLeafPaths(fields));
   const resolvedPaths=new Set<string>();
   let missing=0;
-  const visit=(value:unknown,path:string,depth:number):void=>{
-    if(Array.isArray(value)){missing++;return;}
+  const countLeaves=(value:unknown):number=>{
+    if(Array.isArray(value))return value.length?value.reduce<number>((sum,item)=>sum+countLeaves(item),0):1;
     if(objectRecord(value)){
-      if(depth>=MAX_DEPTH){missing++;return;}
+      const children=Object.values(value);
+      return children.length?children.reduce<number>((sum,item)=>sum+countLeaves(item),0):1;
+    }
+    return 1;
+  };
+  const visit=(value:unknown,path:string,depth:number):void=>{
+    if(Array.isArray(value)){
+      missing+=countLeaves(value);
+      return;
+    }
+    if(objectRecord(value)){
+      if(depth>=MAX_DEPTH){missing+=countLeaves(value);return;}
       for(const [key,child] of Object.entries(value)){
         const next=path?path+'.'+key:key;
         if(!safeLocalFieldPath(next)){
-          missing++;continue;
+          missing+=countLeaves(child);continue;
         }
         visit(child,next,depth+1);
       }

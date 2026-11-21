@@ -166,7 +166,14 @@
     "processname": "process_name",
     "commandline": "command",
     "parentprocess": "parent_proc_name",
-    "eventtype": "event_type"
+    "eventtype": "event_type",
+    "id.orig_h": "srcip",
+    "id.resp_h": "dstip",
+    "id.orig_p": "srcport",
+    "id.resp_p": "dstport",
+    "source_address": "srcip",
+    "destination_address": "dstip",
+    "protocol_id": "proto"
   },
   "advisoryOnlyAliases": {
     "srcip": "srcip",

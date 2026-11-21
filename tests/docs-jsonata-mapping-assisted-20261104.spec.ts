@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 
 const raw=readFileSync(resolve('tests/fixtures/docs-practice-20261104/01-juniper-srx.log'),'utf8');
-test('published Juniper logs → ChatGPT JSONata mapping review → DRAFT Ruby and conf',async({page})=>{
+test('Juniper ChatGPT JSONata review protects a user-edited mapping and blocks unsafe proposals',async({page})=>{
   test.skip((process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1'||process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1'),'Pinned real authoring backend required.');
   test.setTimeout(90000);
   const errors:string[]=[];
@@ -28,7 +28,7 @@ test('published Juniper logs → ChatGPT JSONata mapping review → DRAFT Ruby a
   const position=await rows.evaluateAll((nodes,src)=>nodes.findIndex(node=>
     (node.querySelector('input[aria-label^="Source field "]') as HTMLInputElement|null)?.value===src),source);
   expect(position).toBeGreaterThan(-1);
-  const target=rows.nth(position).locator('input[aria-label^="Stellar field "]');
+  const target=map.locator('article.normalization-map-row[data-source-path="'+source+'"] input[aria-label^="Stellar field "]');
   await expect(target).toHaveValue('srcip');
   await target.fill('temporary_vendor_source_ip');
   const assistant=map.getByLabel('ChatGPT JSONata field mapping');
@@ -51,28 +51,20 @@ test('published Juniper logs → ChatGPT JSONata mapping review → DRAFT Ruby a
   }));
   await assistant.getByRole('button',{name:'Check JSONata Mappings'}).click();
   const reviewed=assistant.getByLabel('Reviewed ChatGPT JSONata mappings');
-  await expect(reviewed).toContainText('READY');
+  const sourceRow=reviewed.locator('label.jsonata-assist-row').filter({hasText:'source-address → srcip'});
+  await expect(sourceRow).toContainText('BLOCKED');
+  await expect(sourceRow).toContainText('Human mapping');
+  await expect(sourceRow.locator('input[type="checkbox"]')).toBeDisabled();
   await expect(reviewed).toContainText('BLOCKED');
-  await expect(reviewed.locator('input[type="checkbox"]:disabled')).toHaveCount(2);
-  await expect(assistant.getByRole('button',{name:'Apply 1 Reviewed Mapping'})).toBeDisabled();
-  await assistant.getByLabel('I reviewed the selected JSONata mappings').check();
-  await assistant.getByRole('button',{name:'Apply 1 Reviewed Mapping'}).click();
-  const changed=await map.locator('article.normalization-map-row').evaluateAll((nodes,src)=>nodes
-    .map(node=>({source:(node.querySelector('input[aria-label^="Source field "]') as HTMLInputElement|null)?.value,
-      target:(node.querySelector('input[aria-label^="Stellar field "]') as HTMLInputElement|null)?.value,
-      className:node.className})).find(row=>row.source===src),source);
-  expect(changed).toMatchObject({source,target:'srcip'});
-  expect(changed?.className).toContain('verified');
-  await expect(map.getByLabel('Field changes only')).toContainText('srcip');
-  await map.getByRole('button',{name:'Create Parser',exact:true}).click();
-  await expect(page.getByLabel('Create Parser stage')).toBeVisible();
-  const response=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&r.request().method()==='POST');
-  await page.getByRole('button',{name:'Create Parser Files'}).click();
-  const compiled=await response;
-  expect(compiled.status()).toBe(200);
-  const pair=await compiled.json() as {manifest:{status:string;engineVerified:boolean;targetImportVerified:boolean},files:unknown[]};
-  expect(pair.manifest).toMatchObject({status:'DRAFT',engineVerified:false,targetImportVerified:false});
-  expect(pair.files).toHaveLength(2);
+  await expect(reviewed.locator('input[type="checkbox"]:disabled')).toHaveCount(3);
+  await expect(target).toHaveValue('temporary_vendor_source_ip');
+  await expect(reviewed.locator('label.jsonata-assist-row').filter({hasText:'nat-source-address'})).toContainText('BLOCKED');
+  await expect(reviewed.locator('label.jsonata-assist-row').filter({hasText:'$number'})).toContainText('BLOCKED');
+  await expect(assistant.getByRole('button',{name:/Apply .* Reviewed Mapping/})).toHaveCount(0);
+  // No AI proposal was selected or applied: the user-edited destination survives review.
+  await expect(target).toHaveValue('temporary_vendor_source_ip');
+  await expect(map.getByLabel('Field changes only')).toContainText('temporary_vendor_source_ip');
+  await expect(map.getByLabel('Field changes only')).toContainText('10.0.0.1');
   expect(errors).toEqual([]);
   expect(external).toEqual([]);
 });

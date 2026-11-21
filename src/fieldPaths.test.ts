@@ -24,6 +24,13 @@ describe('literal dotted source keys versus nested object paths',()=>{
 });
 
 describe('loss-aware source field coverage',()=>{
+  it('counts every value inside an unaddressable array instead of treating the whole array as one value',()=>{
+    const fields={metadata:{evidence:['IOC-A',{indicator:'IOC-B'},null]}};
+    // Array members remain in the parsed source tree even though the native
+    // mapping contract cannot select an array member by a safe dotted path.
+    expect(countUnaddressableSourceValues(fields)).toBe(3);
+  });
+
   it('resolves unique intermediate dotted keys and reports unsupported values',()=>{
     const fields={
       timestamp:'2026-11-03T11:00:00Z',
@@ -37,7 +44,7 @@ describe('loss-aware source field coverage',()=>{
     const paths=listSafeLeafPaths(fields);
     expect(paths).toEqual(['timestamp','metadata.session.id','metadata.source-address']);
     for(const path of paths)expect(lookupFieldValue(fields,path).found).toBe(true);
-    expect(countUnaddressableSourceValues(fields)).toBe(2);
+    expect(countUnaddressableSourceValues(fields)).toBe(3);
   });
 
   it('counts source fields beyond the safe mapping budget, without erasing the input',()=>{

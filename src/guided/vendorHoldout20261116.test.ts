@@ -24,7 +24,7 @@ interface Meta{expect:'PARSE'|'ASSISTED';oracle:Oracle[]}
 const READING:Record<string,[string,number]>={
   h_checkpoint_logexporter:['generic',6],
   h_cloudtrail_line:['json',2],
-  h_fortigate_mixed:['generic',6],
+  h_fortigate_mixed:['generic',11],    // srcport, dstport, url: official names present in some record families only
   h_fortigate_webfilter:['generic',12],
   h_imperva_cef:['cef',1],
   h_okta_system_log:['json',1],
@@ -35,7 +35,7 @@ const READING:Record<string,[string,number]>={
   h_srx_sd_close_deny:['syslog_rfc5424',13],
   h_stormshield_filter:['kv',6],
   h_suricata_rfc5424:['syslog_rfc5424',10],
-  h_zeek_conn_json:['json',0],         // read since a number is judged by its value, not its digit count
+  h_zeek_conn_json:['json',10],        // id.orig_h/id.resp_h/id.orig_p/id.resp_p are the conn.log endpoints; proto holds the name
   // Free text: a parsing rule is needed (ChatGPT Assisted Parser). Declined with a diagnosis, never guessed.
   h_cisco_asa_mixed:['declined',0],
   h_nginx_combined:['declined',0],
@@ -46,7 +46,7 @@ const READING:Record<string,[string,number]>={
   h_cisco_ftd_430003:['declined',0],   // "Key: value, Key: value" list behind %FTD-n-nnnnnn:
   h_cloudflare_http:['declined',0],    // nanosecond integers above 2^53
   h_meraki_urls_flows:['declined',0],  // a urls record has fewer than five key=value pairs
-  h_trendmicro_ds_leef:['declined',0], // LEEF 2.0 without a delimiter field behind a Syslog header
+  h_trendmicro_ds_leef:['generic',5], // repository-authored Trend Micro grammar shape: implicit-TAB LEEF 2.0 behind RFC 3164
   h_win4625_nxlog_json:['declined',0], // Keywords is a 64-bit integer
 };
 

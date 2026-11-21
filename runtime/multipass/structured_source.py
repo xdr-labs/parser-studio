@@ -49,6 +49,8 @@ class Fragment:
     primitive_fields:int=0
 
 
+_SD_BYTE_LIMIT=8192
+
 def _unescape(segment:str)->str:
     out=[]
     i=0
@@ -417,7 +419,11 @@ def extract_rfc5424(raw:str,*,source_preserving:bool=False,
                     raise ValueError("RFC5424_SD_UNCLOSED")
                 pos+=1
                 structured[ident]=fields
-                if len(raw[sd_start:pos].encode("utf8"))>1024:
+                # RFC 5424 sets no length for structured data. The bound was 1024 bytes; a Junos
+                # RT_FLOW_SESSION_CLOSE record with NAT and application fields is longer, and the browser's Junos
+                # reader accepts up to 8192 bytes, so the preview called PARTIAL what the generated parser reads.
+                # The bound here is the browser's.
+                if len(raw[sd_start:pos].encode("utf8"))>_SD_BYTE_LIMIT:
                     raise ValueError("RFC5424_SD_BYTE_LIMIT")
             except ValueError as exc:
                 result.issues.append(str(exc))

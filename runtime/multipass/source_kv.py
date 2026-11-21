@@ -42,6 +42,25 @@ def unescape_kv_value(text:str)->str:
     return ''.join(out)
 
 
+def _delimited_pair_unread(raw:str,start:int,end:int)->bool:
+    """True when the unquoted value raw[start:end] holds, or ends in, a list delimiter (, ; |) that the key of
+    another pair follows, with no "=" before it: "1,b=2", or "1," before " b=2". Such a value is not one value.
+    Same rule as unquotedValueEnd of src/grammar/parseStatus.ts, where the browser grades the event PARTIAL; a
+    value with "=" before the delimiter is a list of its own (a distinguished name) and is one value."""
+    for at in range(start,end):
+        ch=raw[at]
+        if ch=='=':return False
+        if ch not in ',;|':continue
+        if at+1<end:
+            key=KEY.match(raw,at+1)
+            if key is not None and key.end()<=end:return True
+        else:
+            following=end
+            while following<len(raw) and raw[following] in KV_ASCII_WHITESPACE:following+=1
+            if KEY.match(raw,following) is not None:return True
+    return False
+
+
 def _diagnose(raw:str,pos:int)->str:
     """Name why no contract pair starts at `pos`. Never decides acceptance."""
     pos=GAP.match(raw,pos).end()
@@ -75,6 +94,10 @@ def decode_source_kv(raw:str,begin:int=0,*,max_fields:int=MAX_FIELDS)->Fragment:
         group=next(name for name in ('dq','sq','bare') if match[name] is not None)
         # An unquoted value has no quoting syntax to escape from: it is the text as written.
         value=match[group] if group=='bare' else unescape_kv_value(match[group])
+        # A pair behind a list delimiter was not read as a pair: every field is kept, and the event is never
+        # reported as completely parsed (the browser grades it PARTIAL, src/grammar/parseStatus.ts).
+        if group=='bare' and 'KV_DELIMITED_PAIR_UNREAD' not in out.issues and _delimited_pair_unread(raw,*match.span('bare')):
+            out.issues.append('KV_DELIMITED_PAIR_UNREAD')
         if key in out.fields:
             # Source preview keeps every occurrence of a repeated key, in order (release gate H3).
             previous=out.fields[key]

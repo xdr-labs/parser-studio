@@ -244,6 +244,77 @@ high({flow:{spt:443,'protocol-id':6}},'flow.spt','srcport','integer');
 absent({post_nat:{'destination-port':443}},'post_nat.destination-port');
 absent({translated_source:{'destination-port':443}},'translated_source.destination-port');
 high({icmp_type:'8','protocol-id':6},'icmp_type','icmp_type','string');
+// The Junos structured-data reader writes icmp_type beside protocol_id: zero-filled on TCP/UDP, a type on ICMP.
+absent({junos_sd:{icmp_type:'0',protocol_id:'6'}},'junos_sd.icmp_type');
+high({junos_sd:{icmp_type:'8',protocol_id:'1'}},'junos_sd.icmp_type','icmp_type','string');
+// A sample of several record families: an endpoint field that carries the official name itself is approved
+// although one family lacks it; an alias, or an official name of another kind, stays a review proposal.
+const families=suggest([{srcip:'192.0.2.1',srcport:51544,dstport:443,proto:6,md5:'69630e4574ec6798239b091cda43dca0'},
+  {note:'system record'}]);
+for(const name of ['srcip','srcport','dstport','proto']){
+  const found=families.find(r=>r.source===name);
+  assert.equal(found?.target,name,'sparse official-name endpoint '+name);
+  assert.equal(found?.confidence,'HIGH','sparse official-name endpoint approved '+name);
+  assert.equal(found?.safeForBulk,true,'sparse official-name endpoint bulk '+name);
+}
+assert.equal(families.find(r=>r.source==='md5')?.confidence,'REVIEW','sparse non-endpoint official name');
+// A source called proto: documented protocol names are the name field, numbers the number field.
+const target=(events,source)=>suggest(events).filter(r=>r.source===source).map(r=>r.target+':'+r.confidence);
+assert.deepEqual(target([{proto:'tcp'},{proto:'UDP'}],'proto'),['proto_name:HIGH'],'protocol names');
+assert.deepEqual(target([{proto:'tcp'},{proto:'-'}],'proto'),['proto_name:HIGH'],'a placeholder beside a name does not make the field a number');
+assert.deepEqual(target([{proto:6},{proto:'17'}],'proto'),['proto:HIGH'],'protocol numbers');
+assert.deepEqual(target([{proto:'tcp'},{proto:6}],'proto'),['proto:REVIEW'],'names and numbers mixed');
+assert.deepEqual(target([{proto:'https'}],'proto'),['proto:REVIEW'],'an application label is neither');
+// Independent audit of 2026-11-21 (F3-F6, F9): sparse approval needs TCP or UDP named by the record for a port,
+// a record-level source, a URL-shaped url, and never applies to an explicit port label or a Zeek id.*_p alias
+// without a transport protocol.
+const rv=(events,source)=>suggest(events).filter(r=>r.source===source).map(r=>r.confidence);
+assert.deepEqual(rv([{srcport:51234,ipproto:6},{srcport:8,ipproto:1},{note:'x'}],'srcport'),['REVIEW'],'ICMP family, ipproto');
+assert.deepEqual(rv([{srcport:8},{note:'x'}],'srcport'),['REVIEW'],'sparse port, no protocol');
+assert.deepEqual(rv([{srcport:51234,l4proto:'tcp'},{note:'x'}],'srcport'),['HIGH'],'sparse port, l4proto=tcp');
+assert.deepEqual(rv([{srcport:51234,proto:6,transport:51234},{note:'x'}],'srcport'),['HIGH'],'FortiGate transport is a translated port, not a protocol');
+assert.deepEqual(rv([{xlate:{srcip:'203.0.113.5'}},{note:'x'}],'xlate.srcip'),['REVIEW'],'nested endpoint');
+assert.deepEqual(rv([{generic:{kv:{srcip:'203.0.113.5'}}},{note:'x'}],'generic.kv.srcip'),['REVIEW'],'a container of an unknown reading is not the record level');
+// Re-audit of 2026-11-21 (N2-N4).
+assert.deepEqual(rv([{proto:6,fields:{srcip:'203.0.113.5',srcport:40002}},{note:'x'}],'fields.srcip'),['REVIEW'],'JSON object called fields');
+assert.deepEqual(rv([{proto:6,fields:{srcip:'203.0.113.5',srcport:40002}},{note:'x'}],'fields.srcport'),['REVIEW'],'root proto is not evidence for a nested port');
+assert.deepEqual(rv([{srcport:51234,dstport:443,service:'HTTPS'},{srcport:8,dstport:0,service:'PING'},{srcport:'-',dstport:'-',service:'-'}],'srcport'),['REVIEW'],'a placeholder is not coverage');
+assert.deepEqual(rv([{SrcPort:51234,Protocol:'TCP'},{SrcPort:8,Protocol:'ICMP'}],'SrcPort'),['REVIEW'],'protocol field name in another case');
+assert.deepEqual(rv([{SrcPort:51234,Protocol:'TCP'},{SrcPort:443,Protocol:'udp'}],'SrcPort'),['HIGH'],'TCP and UDP named in another case');
+assert.deepEqual(rv([{srcport:51234,proto:6},{srcport:8},{note:'x'}],'srcport'),['REVIEW'],'evidence of one event does not serve another');
+// The record level follows from the reading of the events that carry the source.
+const read=(format,events,source)=>mod.suggestNormalizationCandidatesFromSuite(
+  {events:events.map(fields=>({fields,effectiveFormat:format}))},[]).filter(r=>r.source===source).map(r=>r.confidence);
+const inKv={generic:{kv:{srcip:'203.0.113.5',srcport:40002,proto:6}}},inBody={body:{srcip:'203.0.113.5',srcport:40002,proto:6}};
+const other={generic:{kv:{note:'x'}},body:{note:'x'}};
+assert.deepEqual(read('generic_structural',[inKv,other],'generic.kv.srcip'),['HIGH'],'generic reader container');
+assert.deepEqual(read('generic_structural',[inKv,other],'generic.kv.srcport'),['HIGH'],'port with TCP in its own container');
+assert.deepEqual(read('json',[inKv,other],'generic.kv.srcip'),['REVIEW'],'the same path in a JSON log');
+assert.deepEqual(read('syslog_rfc3164',[inBody,other],'body.srcip'),['HIGH'],'RFC 3164 body');
+assert.deepEqual(read('syslog_rfc5424',[inBody,other],'body.srcip'),['HIGH'],'RFC 5424 body');
+assert.deepEqual(read('json',[inBody,other],'body.srcip'),['REVIEW'],'a JSON object called body');
+assert.deepEqual(read('kv',[inBody,other],'body.srcip'),['REVIEW'],'no container in a key=value reading');
+assert.deepEqual(read('syslog_rfc3164',[inKv,other],'generic.kv.srcip'),['REVIEW'],'generic container under a Syslog reading');
+assert.deepEqual(read('generic_structural',[{xlate:{fields:{srcip:'203.0.113.5'}}},other],'xlate.fields.srcip'),['REVIEW'],'not a reader container');
+// The requested host of an HTTP request record (Zeek http.log `host`) is not the official hostname.
+absent({method:'GET',host:'example.com',uri:'/index.html',status_code:200},'host');
+absent({request_method:'POST',host:'shop.example.com',user_agent:'curl/8.5.0'},'host');
+absent({Method:'GET',host:'example.com',URI:'/'},'host');
+absent({http:{method:'GET',host:'example.com',url:'/x'}},'http.host');
+high({host:'fw01',msg:'link up'},'host','hostname','string');
+high({host:'fw01',method:'https'},'host','hostname','string');
+high({host:'fw01',url:'/admin'},'host','hostname','string');
+high({host:'proxy01',request:{method:'GET',uri:'/'}},'host','hostname','string');
+// A protocol field without a scalar value says nothing.
+assert.deepEqual(rv([{srcport:51234,dstport:443,proto:6,protocol:null}],'srcport'),['HIGH'],'null protocol field');
+assert.deepEqual(rv([{srcport:51234,dstport:443,proto:6,protocol:{name:'x'}}],'srcport'),['HIGH'],'object protocol field');
+assert.deepEqual(rv([{url:'category-db-2026.11'},{note:'x'}],'url'),['REVIEW'],'url that is not a URL');
+assert.deepEqual(rv([{url:'/index.html'},{url:'https://example.com/a'},{note:'x'}],'url'),['HIGH'],'URL-shaped url');
+assert.deepEqual(rv([{'source-port':'12','destination-port':'2048','protocol-id':'1'},{note:'x'}],'source-port'),['REVIEW'],'sparse explicit label');
+assert.deepEqual(rv([{'id.orig_h':'192.168.1.10','id.orig_p':8,'id.resp_h':'8.8.8.8','id.resp_p':0}],'id.orig_p'),['REVIEW'],'Zeek port alias without proto');
+assert.deepEqual(rv([{'id.orig_h':'192.168.1.10','id.orig_p':51234,'id.resp_h':'8.8.8.8','id.resp_p':443,proto:'tcp'}],'id.orig_p'),['HIGH'],'Zeek port alias beside tcp');
+const sparseBadPort=suggest([{srcport:70000},{note:'system record'}]);
+assert.equal(sparseBadPort.find(r=>r.source==='srcport')?.confidence,'REVIEW','sparse endpoint with an invalid value');
 const mismatch={id:'auto-1',source:'src_ip',target:'srcip',type:'string',
   authoring:{version:1,origin:'AUTO'}};
 const mismatchCandidate=row({src_ip:'192.0.2.1'},'src_ip',[mismatch]);

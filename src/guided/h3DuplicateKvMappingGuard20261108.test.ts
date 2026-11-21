@@ -22,7 +22,7 @@ describe('H3 duplicate KV values cannot silently become an official scalar',()=>
      srcip:['192.0.2.10','198.51.100.10'], action:'deny',
    };
    expect(listSafeLeafPaths(independentlyObserved)).toEqual(['action']);
-   expect(countUnaddressableSourceValues(independentlyObserved)).toBe(1);
+    expect(countUnaddressableSourceValues(independentlyObserved)).toBe(2);
    expect(independentlyObserved.srcip).toEqual(['192.0.2.10','198.51.100.10']);
  });
 });

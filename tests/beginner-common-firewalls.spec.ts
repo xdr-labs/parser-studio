@@ -50,13 +50,13 @@ test('common PAN-OS Traffic syslog is auto-adopted and mapped without a repair c
   await page.getByRole('button',{name:'Map Fields',exact:true}).click();
   const map=page.getByLabel('Map Fields stage');
   await expect(map.getByLabel(/Source field/).filter({hasText:''}).first()).toBeVisible();
-  await expect(map).toContainText('parserstudio_source.generic.fields.src');
+  await expect(map.locator('article.normalization-map-row[data-source-path="generic.fields.src"]')).toHaveCount(1);
   await expect(map).toContainText('srcip');
-  await expect(map).toContainText('parserstudio_source.generic.fields.dst');
+  await expect(map.locator('article.normalization-map-row[data-source-path="generic.fields.dst"]')).toHaveCount(1);
   await expect(map).toContainText('dstip');
-  await expect(map).toContainText('parserstudio_source.generic.fields.protocol');
+  await expect(map.locator('article.normalization-map-row[data-source-path="generic.fields.protocol"]')).toHaveCount(1);
   await expect(map).toContainText('proto_name');
-  await expect(map).toContainText('parserstudio_source.generic.fields.action');
+  await expect(map.locator('article.normalization-map-row[data-source-path="generic.fields.action"]')).toHaveCount(1);
 });
 
 test('common year-bearing ASA 302013 wrapper is auto-adopted as a complete event',async({page})=>{
@@ -87,10 +87,10 @@ test('BIG-IP ASM comma KV is auto-adopted and nested leaf names drive Stellar su
   await page.getByRole('button',{name:'Review Fields',exact:true}).click();
   await page.getByRole('button',{name:'Map Fields',exact:true}).click();
   const map=page.getByLabel('Map Fields stage');
-  await expect(map).toContainText('parserstudio_source.generic.fields.ip_client');
+  await expect(map.locator('article.normalization-map-row[data-source-path="generic.fields.ip_client"]')).toHaveCount(1);
   await expect(map).toContainText('srcip');
-  await expect(map).toContainText('parserstudio_source.generic.fields.dest_ip');
+  await expect(map.locator('article.normalization-map-row[data-source-path="generic.fields.dest_ip"]')).toHaveCount(1);
   await expect(map).toContainText('dstip');
-  await expect(map).toContainText('parserstudio_source.generic.fields.protocol');
+  await expect(map.locator('article.normalization-map-row[data-source-path="generic.fields.protocol"]')).toHaveCount(1);
   await expect(map).toContainText('proto_name');
 });

@@ -77,6 +77,21 @@ function oracle(mod){
   assert.equal(runSuite(mod,[{src_ip:'192.0.2.1'}],[
     {id:'custom',source:'old',target:'srcip',type:'ip'}]).some(c=>c.target==='srcip'),
     false,'occupied destination cannot get a competing candidate');
+  // Mixed record families: an endpoint field that carries the official name itself is approved although one
+  // family lacks it; an official name of another kind is not.
+  const families=runSuite(mod,[{srcport:51544,proto:6,md5:'69630e4574ec6798239b091cda43dca0'},{note:'system record'}]);
+  // Found by the independent audit of 2026-11-21: none of these may be approved.
+  const icmpFamily=runSuite(mod,[{srcport:51234,dstport:443,ipproto:6},{srcport:8,dstport:0,ipproto:1},{note:'system record'}]);
+  assert.equal(icmpFamily.filter(c=>['srcport','dstport'].includes(c.target)).every(c=>!c.safeForBulk),true,
+    'sparse port beside an ICMP record that names its protocol ipproto');
+  const noProtocol=runSuite(mod,[{srcport:8,dstport:0},{note:'system record'}]);
+  assert.equal(noProtocol.filter(c=>['srcport','dstport'].includes(c.target)).every(c=>!c.safeForBulk),true,
+    'sparse port without any protocol in the record');
+  const nested=runSuite(mod,[{xlate:{srcip:'203.0.113.5',srcport:40002},proto:6},{note:'system record'}]);
+  assert.equal(nested.filter(c=>['srcip','srcport'].includes(c.target)).every(c=>!c.safeForBulk),true,
+    'sparse endpoint inside a nested object');
+  assert.equal(families.find(c=>c.source==='srcport')?.safeForBulk,true,'sparse official-name endpoint field');
+  assert.equal(families.find(c=>c.source==='md5')?.safeForBulk,false,'sparse official name of another kind');
   assert.deepEqual(runSuite(mod,[]),[],'empty data has no candidates');
 }
 const variants=[
@@ -89,12 +104,30 @@ const variants=[
   ['pretend no type-compatible observations',
     'const compatibleObserved=informativeValues.filter(result=>',
     'const compatibleObserved=informativeValues.filter(result=>false&&'],
-  ['ignore sparse family evidence',
-    'informative>0&&!nonTransportPort;',
-    'informative>0;'],
+  ['ignore a non-transport protocol beside the port',
+    'informative>0&&!nonTransportPort&&!lacksTransportEvidence;',
+    'informative>0&&!lacksTransportEvidence;'],
   ['ignore complete event evidence',
-    'compatibleObserved===informative&&values.length===events.length&&',
+    'compatibleObserved===informative&&(values.length===events.length||namedAsTarget)&&',
     'compatibleObserved===informative&&'],
+  ['approve every sparse source',
+    'const namedAsTarget=SPARSE_SAFE_TARGETS.has(target)&&leaf.toLowerCase()===target&&sparseSafeSource(source,target,informativeValues,carrierFormats);',
+    'const namedAsTarget=true;'],
+  ['approve a sparse source for any official name',
+    'const namedAsTarget=SPARSE_SAFE_TARGETS.has(target)&&leaf.toLowerCase()===target&&sparseSafeSource(source,target,informativeValues,carrierFormats);',
+    'const namedAsTarget=leaf.toLowerCase()===target&&sparseSafeSource(source,target,informativeValues,carrierFormats);'],
+  ['approve a sparse alias of an endpoint field',
+    'const namedAsTarget=SPARSE_SAFE_TARGETS.has(target)&&leaf.toLowerCase()===target&&sparseSafeSource(source,target,informativeValues,carrierFormats);',
+    'const namedAsTarget=SPARSE_SAFE_TARGETS.has(target)&&sparseSafeSource(source,target,informativeValues,carrierFormats);'],
+  ['approve a sparse port without TCP or UDP named by the record',
+    'informative>0&&!nonTransportPort&&!lacksTransportEvidence;',
+    'informative>0&&!nonTransportPort;'],
+  ['approve a sparse endpoint inside a nested object or a sparse url of any shape',
+    'if(!recordLevelSource(source,formats)||sourceHasExcludedPortSegment(source))return false;',
+    'if(false)return false;'],
+  ['never approve a sparse official-name endpoint field',
+    'const namedAsTarget=SPARSE_SAFE_TARGETS.has(target)&&leaf.toLowerCase()===target&&sparseSafeSource(source,target,informativeValues,carrierFormats);',
+    'const namedAsTarget=false;'],
   ['ignore abnormal port protocol',
     'const nonTransportPort=!explicitPort&&(target===\'srcport\'||target===\'dstport\')&&',
     'const nonTransportPort=false&&(target===\'srcport\'||target===\'dstport\')&&'],

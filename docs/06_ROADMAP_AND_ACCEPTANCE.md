@@ -1,6 +1,18 @@
 # Current engineering completion ledger — 2026-10-23
 
 
+## ACTIVE EXPERIMENT — Lossless-first Parsing and Progressive Mapping UX (owner, 2026-11-17)
+
+The owner directed an accuracy-first experiment in a separate Codex-only clone:
+source parsing and lossless field/value accounting first, then automatic
+Stellar Cyber 7.0 matching, optional privacy-reviewed ChatGPT JSONata mapping,
+and finally user-selected/manual mapping with a DR Control-inspired source
+tree / rule editor / final output preview. The two existing product modes
+remain unchanged. [Detailed ordered LF-0 -> LF-1 -> MAP-1 -> MAP-2 -> QUAL-1
+roadmap and acceptance](verification/20261117-lossless-first-mapping-ux-roadmap.md).
+This experiment is isolated; it is NOT a main/preview/release change and cannot
+be treated as native Ruby or live DP validation.
+
 ## ACTIVE — Executable Contract and Runtime Fidelity (owner approved 2026-11-10)
 
 Repeated audits found missing **enforcement of shared semantics across every

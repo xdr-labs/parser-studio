@@ -890,7 +890,7 @@ end
 
 # src/grammar/parseStatus.ts: independentKeyValuePairs
 def psg_independent_key_value_pairs(raw)
-  pairs = length = index = key = quote = cursor = rawValue = value = v_end = value_2 = nil
+  pairs = length = index = key = quote = cursor = rawValue = value = v_end = stop = value_2 = nil
   pairs = []
   length = psg_len(raw)
   index = psg_positional_header_end(raw)
@@ -910,13 +910,17 @@ def psg_independent_key_value_pairs(raw)
           value = (rawValue.include?('\\') ? psg_replace(rawValue, /\\(?m:.)/, true, lambda { |pair| psg_slice(pair, 1) }) : rawValue)
           pairs.push({'key' => psg_slice(key[0], 0, (-1)), 'value' => value, 'rawValue' => rawValue, 'quoted' => true})
           index = (cursor + 1)
+          if (((index < length) && psg_is_list_delimiter(psg_at(raw, index))) && psg_key_starts_at(raw, psg_match_end(psg_match_at(/\G(?:[ \t\n\x0b\f\r]*)/, raw, (index + 1))), length))
+            index += 1
+          end
           next
         end
       end
       v_end = psg_match_end(psg_match_at(/\G(?:[^ \t\n\x0b\f\r]*)/, raw, index))
-      value_2 = psg_slice(raw, index, v_end)
+      stop = psg_unquoted_value_end(raw, index, v_end)
+      value_2 = psg_slice(raw, index, stop)
       pairs.push({'key' => psg_slice(key[0], 0, (-1)), 'value' => value_2, 'rawValue' => value_2, 'quoted' => false})
-      index = v_end
+      index = ((stop < v_end) ? (stop + 1) : v_end)
       next
     end
     index = psg_match_end(psg_match_at(/\G(?:[^ \t\n\x0b\f\r]*)/, raw, index))
@@ -963,6 +967,11 @@ def psg_inspect_declared_forwarders(raw, config = nil)
     i += 1
   end
   return (psg_t(hops.length) ? {'status' => 'UNWRAPPED', 'payload' => text, 'payloadStartByte' => startByte, 'hops' => hops, 'reason' => 'DECLARED_SYSLOG_RELAY'} : direct)
+end
+
+# src/grammar/parseStatus.ts: isListDelimiter
+def psg_is_list_delimiter(ch)
+  return (((ch == ',') || (ch == ';')) || (ch == '|'))
 end
 
 # src/grammar/syslogHeader.ts: isSupportedRfc5424Version
@@ -1029,6 +1038,13 @@ def psg_json_text_unaccounted(text, fields)
     end
   end
   return :psg_null
+end
+
+# src/grammar/parseStatus.ts: keyStartsAt
+def psg_key_starts_at(raw, at, v_end)
+  key = nil
+  key = psg_match_at(/\G(?:[A-Za-z_][A-Za-z0-9_.\-]{0,95}=)/, raw, at)
+  return (!key.equal?(:psg_null) && (psg_match_end(key) <= v_end))
 end
 
 # src/structuredFamilies.ts: leefDelimiter
@@ -1732,6 +1748,29 @@ def psg_unescape_kv_value(raw)
     index += 1
   end
   return out
+end
+
+# src/grammar/parseStatus.ts: unquotedValueEnd
+def psg_unquoted_value_end(raw, from, v_end)
+  at = ch = v_next = nil
+  at = from
+  psg_t1 = true
+  while true
+    if psg_t1 then psg_t1 = false else at += 1 end
+    break unless (at < v_end)
+    ch = psg_at(raw, at)
+    if (ch == '=')
+      return v_end
+    end
+    if !psg_is_list_delimiter(ch)
+      next
+    end
+    v_next = (((at + 1) < v_end) ? (at + 1) : psg_match_end(psg_match_at(/\G(?:[ \t\n\x0b\f\r]*)/, raw, v_end)))
+    if psg_key_starts_at(raw, v_next, (((at + 1) < v_end) ? v_end : psg_len(raw)))
+      return at
+    end
+  end
+  return v_end
 end
 
 # src/guided/declaredForwarder.ts: validForwarderConfig

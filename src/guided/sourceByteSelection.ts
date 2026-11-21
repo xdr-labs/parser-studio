@@ -32,3 +32,7 @@ export function fromSourceByteRange(raw:string,startByte:number,endByte:number):
   return [start,end];
  }catch{return null;}
 }
+export function sourceTextForByteRange(raw:string,startByte:number,endByte:number):string|null{
+ const range=fromSourceByteRange(raw,startByte,endByte);
+ return range?raw.slice(range[0],range[1]):null;
+}

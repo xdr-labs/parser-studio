@@ -54,6 +54,12 @@ test('novice reviews original/extracted/normalized samples, keeps source, and se
  const map=page.getByLabel('Map Fields stage');
  await expect(map).toBeVisible();
  await expect(map).toContainText('Stellar field dictionary 7.0.xs');
+ const accounting=map.getByLabel('Lossless source accounting');
+ await expect(accounting).toBeVisible();
+ await expect(accounting).toContainText('Total source: '+Buffer.byteLength(input,'utf8')+' UTF-8 bytes');
+ await expect(accounting).toContainText(sha(input).slice(0,12));
+ await expect(accounting).toContainText('Events accounted: 2 / 2');
+ await expect(accounting).toContainText('Browser preview only · NOT verified with native Ruby / DP.');
  await expect(map.getByLabel('Field mapping summary')).toContainText('Matched to Stellar3');
  await expect(map.getByLabel('Recommended field matches')).toContainText('Apply 0 recommended matches');
  await map.getByRole('button',{name:'Create Parser'}).click();
@@ -64,6 +70,78 @@ test('novice reviews original/extracted/normalized samples, keeps source, and se
  await page.getByLabel('Review Fields stage').getByRole('button',{name:'Back to Logs'}).click();
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(input);
  expect(generatedPosts).toBe(0);
+});
+test('partial source stays at Add Logs with its exact residual visible and creation locked',async({page})=>{
+ test.skip(process.env.PARSER_STUDIO_TEST_MULTIPASS!=='1','Requires the isolated in-repository Multi-Pass service.');
+ const event='{"action":"allow","src_ip":"198.51.100.10"}';
+ const residual='opaque tail 東京';
+ const raw=event+'\n'+residual;
+ let generatedPosts=0;
+ page.on('request',req=>{
+   if(req.method()==='POST'&&new URL(req.url()).pathname.endsWith('/generate'))generatedPosts++;
+ });
+ await page.goto('/');
+ const source=page.getByLabel('Auto Parser raw logs');
+ await source.fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+ await expect(source).toHaveValue(raw);
+ const inspector=page.getByLabel('Parse problem inspector');
+ await expect(inspector).toContainText(residual,{timeout:20000});
+ await expect(inspector.locator('mark').filter({hasText:residual})).toBeVisible();
+ await expect(inspector.locator('code').filter({hasText:residual})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
+ const createStep=page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button',{name:/Create Parser/});
+ await expect(createStep).toHaveClass(/locked/);
+ await createStep.click();
+ await expect(page.getByLabel('Add Logs stage')).toBeVisible();
+ await expect(source).toHaveValue(raw);
+ expect(generatedPosts).toBe(0);
+});
+test('FULL JSON extraction auto-retains a vendor field and permits a manual override',async({page})=>{
+ const raw=[
+  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"my_vendor_token":"customer-visible-note"}',
+  '{"action":"deny","src_ip":"203.0.113.5","dst_port":22,"my_vendor_token":"customer-visible-note"}',
+ ].join('\n');
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2 events analyzed locally');
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+ const review=page.getByRole('button',{name:'Review Fields',exact:true});
+ await expect(review).toBeEnabled({timeout:20000});
+ await review.click();
+ await expect(page.getByLabel('Review Fields stage')).toBeVisible();
+ await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields',exact:true}).click();
+ const map=page.getByLabel('Map Fields stage');
+ await map.getByLabel('Search source fields').fill('my_vendor_token');
+ await map.getByRole('button',{name:'my_vendor_token',exact:true}).click();
+ const row=map.locator('[data-source-path="my_vendor_token"]');
+ await expect(row).toBeVisible();
+ await expect(row).toContainText('my_vendor_token');
+ await expect(row).not.toContainText(/(?:\.\/|\[root\])/);
+ const target=row.getByRole('combobox',{name:'Stellar field 3'});
+ await expect(target).toHaveValue('my_vendor_token');
+ await expect(map.getByLabel('Field mapping summary')).toContainText('Fields found4');
+ await expect(map.getByLabel('Field mapping summary')).toContainText('Matched to Stellar3');
+ await expect(map.getByLabel('Field mapping summary')).toContainText('Vendor fields retained1');
+ await expect(map.getByLabel('Field mapping summary')).toContainText('Left out of output0');
+ const preview=map.getByLabel('Final event preview');
+ await expect(preview).toContainText('Output values present:');
+ await expect(preview).toContainText('my_vendor_token');
+ await expect(preview).toContainText('customer-visible-note');
+ await expect(preview).toContainText('srcip');
+ await expect(preview).toContainText('198.51.100.10');
+ await expect(preview).toContainText('dstport');
+ await expect(preview).toContainText('443');
+ await target.fill('my_vendor_token_reviewed');
+ await expect(target).toHaveValue('my_vendor_token_reviewed');
+ await expect(preview).toContainText('my_vendor_token_reviewed');
+ await expect(preview).toContainText('customer-visible-note');
+ await expect(preview).toContainText('srcip');
+ await expect(preview).toContainText('198.51.100.10');
+ await expect(preview).toContainText('dstport');
+ await expect(preview).toContainText('443');
+ await expect(map.getByLabel('Final event preview')).toContainText('Output values present:');
+ await expect(map.getByLabel('Unparsed source evidence')).toContainText(/no residual byte spans|UNKNOWN \/ UNVERIFIED/);
 });
 test('mixed families and unknown logs are not dropped or transmitted to validation',async({page})=>{
  const generated:string[]=[];

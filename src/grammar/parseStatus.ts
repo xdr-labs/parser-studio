@@ -31,6 +31,15 @@ const KEY_AT_TOKEN_START = /[A-Za-z_][A-Za-z0-9_.-]{0,95}=/uy;
 const GAP_RUN = /[ \t\n\x0b\f\r]*/uy;
 const TOKEN_RUN = /[^ \t\n\x0b\f\r]*/uy;
 const BACKSLASH_PAIR = /\\./gsu;
+// List delimiters. The key=value grammar never separates pairs at one of them (contract KV_GAP: SP and TAB), and
+// that is the reason this reader must: "a=1,b=2" is two pairs whatever the grammar made of the line. A reader
+// that cut tokens at white space only shared the grammar's assumption and could not see the second pair, so a
+// line whose pairs are separated by commas alone was reported FULL with one field (Issue #315, Phase 3).
+// Compared character by character: in the generated Ruby a string search for a character beyond ASCII raises
+// when the artifact was loaded as US-ASCII source, a comparison is simply false.
+function isListDelimiter(ch: string): boolean {
+  return ch === ',' || ch === ';' || ch === '|';
+}
 
 /**
  * RFC 5424 section 6: after "<PRI>VERSION" come five header fields, each separated by exactly one SP and
@@ -93,11 +102,34 @@ function closingQuote(raw: string, quote: string, from: number): number {
   return -1;
 }
 
+/** True when the key of a pair starts at `at` and its "=" lies before `end`. */
+function keyStartsAt(raw: string, at: number, end: number): boolean {
+  const key = matchAt(KEY_AT_TOKEN_START, raw, at);
+  return key !== null && matchEnd(key) <= end;
+}
+
+/**
+ * Where the unquoted value of the token [from, end) stops: at a list delimiter that the key of another pair
+ * follows, either inside the token ("1,b=2") or as its last character when the next token is a pair
+ * ("1, b=2"). A value that holds "=" before such a delimiter is a list of its own - a distinguished name
+ * "CN=a,OU=b", a cookie, a query string - and stays whole, as does a delimiter that no key follows ("a,b,c").
+ */
+function unquotedValueEnd(raw: string, from: number, end: number): number {
+  for (let at = from; at < end; at += 1) {
+    const ch = raw[at]!;
+    if (ch === '=') return end;
+    if (!isListDelimiter(ch)) continue;
+    const next = at + 1 < end ? at + 1 : matchEnd(matchAt(GAP_RUN, raw, end)!);
+    if (keyStartsAt(raw, next, at + 1 < end ? end : raw.length)) return at;
+  }
+  return end;
+}
+
 /**
  * Independent evidence: key=value pairs that start a whitespace-separated token
- * of the raw line. Values in double or single quotes are consumed whole, so a
- * '=' inside a quoted value is never reported as a pair of its own. This is intentionally not the
- * product KV parser.
+ * of the raw line, or that follow a list delimiter (, ; |) inside such a token. Values in double or single
+ * quotes are consumed whole, so a '=' inside a quoted value is never reported as a pair of its own. This is
+ * intentionally not the product KV parser.
  */
 export function independentKeyValuePairs(raw: string): RawPair[] {
   const pairs: RawPair[] = [];
@@ -119,16 +151,20 @@ export function independentKeyValuePairs(raw: string): RawPair[] {
           const value = rawValue.includes('\\') ? rawValue.replace(BACKSLASH_PAIR, pair => pair.slice(1)) : rawValue;
           pairs.push({ key: key[0].slice(0, -1), value, rawValue, quoted: true });
           index = cursor + 1;
+          // A list delimiter between the closing quote and the next key separates two pairs.
+          if (index < length && isListDelimiter(raw[index]!) &&
+            keyStartsAt(raw, matchEnd(matchAt(GAP_RUN, raw, index + 1)!), length)) index += 1;
           continue;
         }
       }
-      // An unquoted value ends at white space. No backslash rule here: this reader must not share the
-      // grammar's idea of an escape (a backslash that carried the next SP made the grammar swallow the
-      // following pair, and a reader with the same rule could not see it).
+      // An unquoted value ends at white space, or at a list delimiter that another pair follows. No backslash
+      // rule here: this reader must not share the grammar's idea of an escape (a backslash that carried the
+      // next SP made the grammar swallow the following pair, and a reader with the same rule could not see it).
       const end = matchEnd(matchAt(TOKEN_RUN, raw, index)!);
-      const value = raw.slice(index, end);
+      const stop = unquotedValueEnd(raw, index, end);
+      const value = raw.slice(index, stop);
       pairs.push({ key: key[0].slice(0, -1), value, rawValue: value, quoted: false });
-      index = end;
+      index = stop < end ? stop + 1 : end;
       continue;
     }
     index = matchEnd(matchAt(TOKEN_RUN, raw, index)!);

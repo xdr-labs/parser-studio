@@ -835,6 +835,33 @@ test.describe('actual Chromium UI ↔ exact same-HEAD authoring backend; target 
       .locator('button.rail-link')).toHaveCount(2);
   });
 
+  test('Map Fields source tree supports an explicit Stellar selection and a same-head Ruby/CONF DRAFT',async({page})=>{
+    const source='{"src_ip":"192.0.2.10","dst_ip":"198.51.100.20","action":"deny"}';
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(source);
+    await analyzeAndReview(page);
+    await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
+    const map=page.getByLabel('Map Fields stage');
+    await expect(map.getByRole('region',{name:'Source fields'})).toBeVisible();
+    await map.getByRole('button',{name:'src_ip',exact:true}).click();
+    const row=map.locator('[data-source-path="src_ip"]');
+    await expect(row).toHaveClass(/selected-source/);
+    await row.getByRole('button',{name:'Choose Stellar field'}).click();
+    await map.getByLabel('Search Stellar field list').fill('srcip');
+    await map.getByLabel('Stellar field chooser').getByRole('button',{name:'Use'}).first().click();
+    await expect(map.getByLabel('Field changes only')).toContainText('192.0.2.10');
+    await expect(map.getByLabel('Final event preview')).toContainText('192.0.2.10');
+    await map.getByRole('button',{name:'Create Parser'}).click();
+    const generated=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
+      r.request().method()==='POST');
+    await page.getByRole('button',{name:'Create Parser Files'}).click();
+    expect((await generated).status()).toBe(200);
+    const pair=await verifyGeneratedDraftPair(page,generated);
+    expect(pair.files.some(file=>file.name.endsWith('.conf'))).toBe(true);
+    expect(pair.files.some(file=>file.name.endsWith('.conf')&&file.content.length>0)).toBe(true);
+    expect(pair.files.some(file=>!file.name.endsWith('.conf')&&file.content.includes('STELLAR_PARSE_BEGIN'))).toBe(true);
+  });
+
 
   test('migrated legacy mapping safety: overlapping normalized destinations cannot reach backend until repaired in place',async({page})=>{
     const outgoing:string[]=[];

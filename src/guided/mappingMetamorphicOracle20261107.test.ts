@@ -30,7 +30,10 @@ const official={
 };
 
 describe('H3 independently expected multi-event mapping invariants',()=>{
-  it('preserves exactly five reviewed official candidates across 100 seeded 2–10-event reorderings',()=>{
+  // The five sources are named exactly as their official Stellar fields, so their meaning does not depend on how
+  // many events of a mixed sample carry them (2026-11-21): they are approved in every ordering. A sparse alias
+  // stays a review proposal (stellar7NormalizationIntegrity20261021.test.ts).
+  it('preserves exactly five official-name candidates across 100 seeded 2–10-event reorderings',()=>{
     for(let seed=1;seed<=100;seed++){
       const next=seeded(seed);
       const count=2+(next()%9);
@@ -62,7 +65,7 @@ describe('H3 independently expected multi-event mapping invariants',()=>{
       expect(forward,'seed '+seed+' rotate').toEqual(rotate);
       expect(forward,'seed '+seed+' shuffle').toEqual(reordered);
       expect(forward.map(x=>x.target).sort(),'seed '+seed+' targets').toEqual(expectedTargets);
-      expect(forward.every(x=>x.confidence==='REVIEW'&&!x.safeForBulk),'seed '+seed+' review').toBe(true);
+      expect(forward.every(x=>x.confidence==='HIGH'&&x.safeForBulk),'seed '+seed+' approved').toBe(true);
       expect(JSON.stringify(records),'seed '+seed+' raw values').toBe(rawSnapshot);
     }
   });

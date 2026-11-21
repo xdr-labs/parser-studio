@@ -1,0 +1,257 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`LF-0 independently scored bounded acceptance matrix > checks known source properties, preserves actual status, and reports deterministic family counts 1`] = `
+[
+  {
+    "bytes": 96,
+    "events": 1,
+    "family": "json",
+    "id": "json-array-null-dotted-utf8",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "33ad5530e18b40e930942c3c47a69ee749ad1faef902a09a8ea0ed9d7c630ea9",
+    "sourceChecks": 1,
+    "status": [
+      "FULL",
+    ],
+  },
+  {
+    "bytes": 2853,
+    "events": 1,
+    "family": "path-bound",
+    "id": "json-128-paths",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "8c21de00a8e3e6b194f3ad05cac67f086e3e0dbdff51d3db86883c7f8b7a4631",
+    "sourceChecks": 2,
+    "status": [
+      "FULL",
+    ],
+  },
+  {
+    "bytes": 24431,
+    "events": 1,
+    "family": "path-bound",
+    "id": "json-1025-paths",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "e96c612ae416dd7848138a09455f765016fdc323e902406574fb2660f1809adf",
+    "sourceChecks": 0,
+    "status": [
+      "UNKNOWN",
+    ],
+  },
+  {
+    "bytes": 2,
+    "events": 1,
+    "family": "json-empty",
+    "id": "empty-object-no-leaf-values",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "sourceChecks": 0,
+    "status": [
+      "UNKNOWN",
+    ],
+  },
+  {
+    "bytes": 149,
+    "events": 3,
+    "family": "mixed",
+    "id": "mixed-json-cef-leef-utf8",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "42a7759d7389232a60b101f31409e0b766e5ad19b608c86d1fd5fcd1a795e1c8",
+    "sourceChecks": 0,
+    "status": [
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+    ],
+  },
+  {
+    "bytes": 66,
+    "events": 3,
+    "family": "csv",
+    "id": "quoted-csv-utf8",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "0e59b4b61ba5f1edbdeabe065e2706893d6a57d3271ff17509885263302adc12",
+    "sourceChecks": 0,
+    "status": [
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+    ],
+  },
+  {
+    "bytes": 76,
+    "events": 1,
+    "family": "cef",
+    "id": "cef-quoted",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "3ae330742efa4b00dc5f26f212f28c0b4b8ec6cec20f04f0a3ad76afbfb2bbe4",
+    "sourceChecks": 2,
+    "status": [
+      "FULL",
+    ],
+  },
+  {
+    "bytes": 61,
+    "events": 1,
+    "family": "leef",
+    "id": "leef-utf8",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "96bcb64946842c8be9369a7b73f887ca0b86fca22b993c43d40d7408987b8f39",
+    "sourceChecks": 1,
+    "status": [
+      "FULL",
+    ],
+  },
+  {
+    "bytes": 869,
+    "events": 2,
+    "family": "syslog",
+    "id": "rfc5424-vendor-derived",
+    "provenance": "VENDOR_DERIVED",
+    "residuals": "UNKNOWN",
+    "sha256": "e88edae2a6e192580c51ef2782d35b1a4ca49126dc496ed30226f2e8a3e1c04d",
+    "sourceChecks": 0,
+    "status": [
+      "FULL",
+      "FULL",
+    ],
+  },
+  {
+    "bytes": 53,
+    "events": 2,
+    "family": "duplicates",
+    "id": "duplicate-source-records",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "3465cfb5f2bc8cb6bb2ce3457625e8682d82b85976300655bfc204019f84b8d8",
+    "sourceChecks": 2,
+    "status": [
+      "FULL",
+      "FULL",
+    ],
+  },
+  {
+    "bytes": 26,
+    "events": 1,
+    "family": "malformed",
+    "id": "malformed-json",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "619e4b1fd74f694b401b6e700b866904a065b7638a2b0617005704ee256863ca",
+    "sourceChecks": 0,
+    "status": [
+      "UNKNOWN",
+    ],
+  },
+  {
+    "bytes": 36,
+    "events": 1,
+    "family": "collision",
+    "id": "dotted-collision",
+    "provenance": "AUTHORED",
+    "residuals": "UNKNOWN",
+    "sha256": "659ca2ae2f231a5e1fcb2455a8461a6f021ac228fcbe1907517596b634edfa92",
+    "sourceChecks": 0,
+    "status": [
+      "FULL",
+    ],
+  },
+]
+`;
+
+exports[`LF-0 independently scored bounded acceptance matrix > checks known source properties, preserves actual status, and reports deterministic family counts 2`] = `
+[
+  {
+    "actualStatuses": [
+      "FULL",
+    ],
+    "family": "cef",
+    "samples": 1,
+  },
+  {
+    "actualStatuses": [
+      "FULL",
+    ],
+    "family": "collision",
+    "samples": 1,
+  },
+  {
+    "actualStatuses": [
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+    ],
+    "family": "csv",
+    "samples": 1,
+  },
+  {
+    "actualStatuses": [
+      "FULL",
+      "FULL",
+    ],
+    "family": "duplicates",
+    "samples": 1,
+  },
+  {
+    "actualStatuses": [
+      "FULL",
+    ],
+    "family": "json",
+    "samples": 1,
+  },
+  {
+    "actualStatuses": [
+      "UNKNOWN",
+    ],
+    "family": "json-empty",
+    "samples": 1,
+  },
+  {
+    "actualStatuses": [
+      "FULL",
+    ],
+    "family": "leef",
+    "samples": 1,
+  },
+  {
+    "actualStatuses": [
+      "UNKNOWN",
+    ],
+    "family": "malformed",
+    "samples": 1,
+  },
+  {
+    "actualStatuses": [
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+    ],
+    "family": "mixed",
+    "samples": 1,
+  },
+  {
+    "actualStatuses": [
+      "FULL",
+      "UNKNOWN",
+    ],
+    "family": "path-bound",
+    "samples": 2,
+  },
+  {
+    "actualStatuses": [
+      "FULL",
+      "FULL",
+    ],
+    "family": "syslog",
+    "samples": 1,
+  },
+]
+`;

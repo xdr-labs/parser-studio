@@ -3,6 +3,7 @@ import {fireEvent,render,screen} from '@testing-library/react';
 import {describe,it,expect,vi} from 'vitest';
 import {preview} from '../parser';
 import {createDraft,type ParserDraft} from '../model';
+import {sha256Utf8Hex} from '../sha256';
 import {defaultGuidedOptions} from './contract';
 import NormalizationMappingReview from './NormalizationMappingReview';
 
@@ -32,6 +33,141 @@ function Harness(){
 }
 
 describe('normalization mapping review UI',()=>{
+  it('reports a rule with a missing normalized target as not emitted',()=>{
+    const raw='{"src_ip":"192.0.2.10","items":["x"],"empty":null}';
+    const draft:ParserDraft={...createDraft(),format:'json',mappings:[
+      {id:'ip',source:'src_ip',target:'srcip',type:'ip'}],
+      guided:{...defaultGuidedOptions(),groups:{ip:'top_fields'}}};
+    const suite=preview(raw,draft);
+    const normalized={...suite.events[0]!.normalized};delete normalized.srcip;
+    suite.events[0]={...suite.events[0]!,normalized};
+    render(<NormalizationMappingReview draft={draft} setDraft={vi.fn()} suite={suite}
+      selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('NOT EMITTED · source value present');
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('NOT MAPPABLE · arrays need a supported native selector');
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('NOT MAPPABLE · null source value');
+    expect(screen.getByLabelText('Final event preview')).toHaveTextContent('Output values present: 0 / 1');
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('["x"]');
+  });
+
+  it('shows no rule for an unmapped source and keeps its original sample visible',()=>{
+    const raw='{"unmapped":"retained","name":"sample"}';
+    const draft:ParserDraft={...createDraft(),format:'json',mappings:[]};
+    const suite=preview(raw,draft);
+    render(<NormalizationMappingReview draft={draft} setDraft={vi.fn()} suite={suite}
+      selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('NO MAPPING RULE · source value present');
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('retained');
+  });
+
+  it('recomputes this event after a manual rename and explicit leave-out',()=>{
+    const raw='{"source-port":443,"note":"original-value"}';
+    function EditableHarness(){
+      const [draft,setDraft]=useState<ParserDraft>({...createDraft(),vendor:'DeviceX',format:'json',
+        mappings:[{id:'port',source:'source-port',target:'srcport',type:'integer',
+          authoring:{version:1,origin:'APPROVED'}}]});
+      const suite=preview(raw,draft);
+      return <><NormalizationMappingReview draft={draft} setDraft={setDraft} suite={suite}
+        originalRawSample={raw} selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>
+        <output aria-label="current normalized event">{JSON.stringify(suite.events[0]?.normalized)}</output></>;
+    }
+    render(<EditableHarness/>);
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('EMITTED IN BROWSER PREVIEW');
+    fireEvent.change(screen.getByLabelText('Stellar field 0'),{target:{value:'client_port'}});
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('EMITTED IN BROWSER PREVIEW');
+    expect(screen.getByLabelText('current normalized event')).toHaveTextContent('client_port');
+    fireEvent.click(screen.getByRole('button',{name:'Remove normalization 0'}));
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('NO MAPPING RULE · source value present');
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('443');
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('original-value');
+    expect(screen.getByLabelText('Final event preview')).toHaveTextContent('Output values present: 0 / 0');
+  });
+
+  it('accounts exact original UTF-8 bytes and updates with selected event and mapping edits',async()=>{
+    const raw='{"message":"診断ログ","source-port":443,"destination-port":444,"nullable":null}\n{"message":"終端","source-port":8443,"destination-port":8444,"nullable":null}';
+    const draft:ParserDraft={...createDraft(),vendor:'DeviceX',format:'json',mappings:[
+      {id:'port',source:'source-port',target:'srcport',type:'integer'}]};
+    const suite=preview(raw,draft);
+    const bytes=new TextEncoder().encode(raw).length;
+    const residuals=suite.events.map(()=>[] as {startByte:number;endByte:number}[]);
+    const raws=suite.events.map(event=>event.raw);
+    const {rerender}=render(<NormalizationMappingReview draft={draft} setDraft={vi.fn()} suite={suite}
+      originalRawSample={raw} multipassSourceSample={raw} multipassResiduals={residuals} multipassRawEvents={raws}
+      selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    expect(await screen.findByText(new RegExp(`Total source: ${bytes} UTF-8 bytes`))).toBeInTheDocument();
+    expect(screen.getByLabelText('Lossless source accounting')).toHaveTextContent(await sha256Utf8Hex(raw));
+    expect(screen.getByLabelText('Lossless source accounting')).toHaveTextContent('Events accounted: 2 / 2');
+    expect(screen.getByLabelText('Lossless source accounting')).toHaveTextContent('Residual evidence: available for every event');
+    expect(screen.getByLabelText('Lossless source accounting')).toHaveTextContent('NOT verified with native Ruby / DP');
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('NOT MAPPABLE · null source value');
+    expect(screen.getByRole('button',{name:'source-port'})).toHaveAttribute('title','Full source path: source-port');
+    expect(screen.getByRole('button',{name:'destination-port'})).toHaveAttribute('title','Full source path: destination-port');
+    rerender(<NormalizationMappingReview draft={{...draft,mappings:[{...draft.mappings[0]!,target:'dstport'}]}} setDraft={vi.fn()} suite={suite}
+      originalRawSample={raw} multipassSourceSample={raw} multipassResiduals={residuals} multipassRawEvents={raws}
+      selected={1} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    expect(await screen.findByText(/Record accounting/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Field changes only')).toHaveTextContent('dstport');
+  });
+  it('keeps missing or index-mismatched Multi-Pass evidence UNKNOWN and shows read-only raw',async()=>{
+    const raw='{"x":1}\n{"x":1}';
+    const draft:ParserDraft={...createDraft(),format:'json'};
+    const suite=preview(raw,draft);
+    render(<NormalizationMappingReview draft={draft} setDraft={vi.fn()} suite={suite} originalRawSample={raw}
+      multipassSourceSample={raw} multipassResiduals={[[]]} multipassRawEvents={[suite.events[0]!.raw]}
+      selected={1} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    expect(await screen.findByText('Record accounting UNKNOWN')).toBeInTheDocument();
+    expect(await screen.findByText(/Missing or mismatched evidence/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Read-only raw sample')).toHaveValue(raw);
+    expect(screen.getByLabelText('Unparsed source evidence')).toHaveTextContent('UNKNOWN / UNVERIFIED');
+  });
+  it('shows exact reviewed residual bytes and offers the existing Review Fields repair path',()=>{
+    const raw='{"ok":true} tail';
+    const suite=preview(raw,{...createDraft(),format:'json'});
+    const start=new TextEncoder().encode('{"ok":true} ').length;
+    const onReviewResiduals=vi.fn();
+    render(<NormalizationMappingReview draft={{...createDraft(),format:'json'}} setDraft={vi.fn()} suite={suite}
+      multipassResiduals={[[{startByte:start,endByte:new TextEncoder().encode(raw).length}]]}
+      multipassRawEvents={[raw]}
+      onReviewResiduals={onReviewResiduals} selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    const evidence=screen.getByLabelText('Unparsed source evidence');
+    expect(evidence).toHaveTextContent(`Bytes ${start}–${new TextEncoder().encode(raw).length}`);
+    expect(evidence).toHaveTextContent('tail');
+    fireEvent.click(screen.getByRole('button',{name:'Review Fields and repair unparsed text'}));
+    expect(onReviewResiduals).toHaveBeenCalledOnce();
+  });
+  it('shows safe source paths with leaf labels, retains selected vendor fields, and keeps arrays not mappable',()=>{
+    const raw='{"vendor":{"source-port":443},"evidence":["ioc-1","ioc-2"],"empty":null}';
+    function SourceTreeHarness(){
+      const [draft,setDraft]=useState<ParserDraft>({...createDraft(),vendor:'DeviceX',format:'json',mappings:[]});
+      const suite=preview(raw,draft);
+      return <><NormalizationMappingReview draft={draft} setDraft={setDraft} suite={suite}
+        selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>
+        <output aria-label="source path output">{JSON.stringify(suite.events[0]?.normalized)}</output>
+      </>;
+    }
+    render(<SourceTreeHarness/>);
+    expect(screen.getByLabelText('Independent parsing and output coverage')).toHaveTextContent('Raw events retained1 / 1');
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('NOT MAPPABLE · arrays need a supported native selector');
+    expect(screen.getByRole('button',{name:'source-port'})).toHaveAttribute('title','Full source path: vendor.source-port');
+    fireEvent.click(screen.getByRole('button',{name:'source-port'}));
+    expect(screen.getAllByText('vendor.source-port').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button',{name:'Keep as vendor field'}));
+    expect(screen.getByLabelText('source path output')).toHaveTextContent('"DeviceX":{"source-port":"443"}');
+    expect(screen.getByLabelText('Final event preview')).toHaveTextContent('Output values present: 1 / 1');
+  });
+
+  it('shows complete long UTF-8 values and labels retained nulls without truncation',()=>{
+    const longValue='診断ログ-'.repeat(20)+'終端';
+    const raw=JSON.stringify({message:longValue,nullable:null});
+    const draft:ParserDraft={...createDraft(),format:'json',mappings:[]};
+    const suite=preview(raw,draft);
+    render(<NormalizationMappingReview draft={draft} setDraft={vi.fn()} suite={suite}
+      selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent(longValue);
+    expect(screen.getByLabelText('Source fields')).toHaveTextContent('NOT MAPPABLE · null source value');
+    expect(screen.getByLabelText('Source fields')).not.toHaveTextContent('…');
+  });
+
   it('bulk-applies only high-confidence official Stellar mappings and previews results',()=>{
     render(<Harness/>);
     expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Matched to Stellar0');
@@ -41,6 +177,37 @@ describe('normalization mapping review UI',()=>{
     expect(screen.getByLabelText('Field mapping checks')).toHaveTextContent('All current field mappings passed the sample checks');
     expect(screen.getByLabelText('Field changes only')).toHaveTextContent('srcip');
     expect(screen.getByLabelText('Field changes only')).toHaveTextContent('192.0.2.10');
+  });
+
+  it('does not bulk-refresh a user-edited mapping from automatic suggestions',()=>{
+    function EditedMappingHarness(){
+      const initial=initialDraft();
+      const [draft,setDraft]=useState<ParserDraft>({...initial,mappings:initial.mappings.map(mapping=>
+        mapping.id==='auto-1'?{...mapping,target:'manual_source_ip',
+          authoring:{version:1,origin:'USER_EDITED'}}:mapping)});
+      const suite=preview(sample,draft);
+      return <><NormalizationMappingReview draft={draft} setDraft={setDraft} suite={suite}
+        selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>
+        <output aria-label="edited target">{draft.mappings.find(mapping=>mapping.id==='auto-1')?.target}</output>
+      </>;
+    }
+    render(<EditedMappingHarness/>);
+    fireEvent.click(screen.getByRole('button',{name:/Apply \d+ recommended matches/}));
+    expect(screen.getByLabelText('edited target')).toHaveTextContent('manual_source_ip');
+  });
+  it('does not let an individually applied official suggestion overwrite an approved mapping',()=>{
+    function ApprovedHarness(){
+      const base=initialDraft();
+      const [draft,setDraft]=useState<ParserDraft>({...base,mappings:base.mappings.map(mapping=>
+        mapping.source==='src_ip'?{...mapping,target:'approved_destination',authoring:{version:1,origin:'APPROVED'}}:mapping)});
+      const suite=preview(sample,draft);
+      return <><NormalizationMappingReview draft={draft} setDraft={setDraft} suite={suite}
+        selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>
+        <output aria-label="protected mapping target">{draft.mappings.find(mapping=>mapping.source==='src_ip')?.target}</output></>;
+    }
+    render(<ApprovedHarness/>);
+    fireEvent.click(screen.getByRole('button',{name:'Apply official mapping src_ip'}));
+    expect(screen.getByLabelText('protected mapping target')).toHaveTextContent('approved_destination');
   });
 
   it('keeps a non-dictionary target as a vendor field and still lets the user search the official catalog',()=>{
@@ -217,7 +384,7 @@ describe('unmappable source field disclosure',()=>{
     const suite=preview(sample,draft);
     render(<NormalizationMappingReview draft={draft} setDraft={vi.fn()} suite={suite}
       selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
-    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Unmappable source values2');
-    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output3');
+    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Unmappable source values3');
+    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output4');
   });
 });

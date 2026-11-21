@@ -6,7 +6,7 @@
 
 # src/genericStructural.ts: GENERIC_FAMILY_MODES
 def psg_k_generic_family_modes
-  @psg_k_generic_family_modes ||= ['structured_family_cef', 'structured_family_leef', 'syslog_envelope_cef', 'syslog_envelope_leef', 'leef2_implicit_tab']
+  @psg_k_generic_family_modes ||= ['structured_family_cef', 'structured_family_leef', 'syslog_envelope_cef', 'syslog_envelope_leef', 'syslog_envelope_leef2_implicit_tab', 'leef2_implicit_tab']
 end
 
 # src/grammar/genericParseStatus.ts: GRAMMAR_OWNED_NODES
@@ -585,7 +585,7 @@ end
 
 # src/genericStructural.ts: extractGenericStructural
 def psg_extract_generic_structural(raw, profile = nil, familyGrammar = nil)
-  unsupportedVersion = includesLeef = includesSyslog = fields = claim = parsed = enveloped = fields_2 = generic = fields_3 = nil
+  unsupportedVersion = includesLeef = includesSyslog = fields = envelope = parsed = body = claim = parsed_2 = enveloped = fields_2 = generic = fields_3 = nil
   if /[\x00\x0a-\x0d\x1c-\x1f]/.match?(raw)
     return {'fields' => {}, 'errors' => ['Unsupported physical control separator in Generic Structural source']}
   end
@@ -599,13 +599,23 @@ def psg_extract_generic_structural(raw, profile = nil, familyGrammar = nil)
     fields = psg_extract_leef2_implicit_tab(raw)
     return (psg_t(fields) ? {'fields' => fields, 'errors' => []} : {'fields' => {}, 'errors' => ['Event does not match the bounded Generic Structural compiler grammar']})
   end
+  if (includesLeef && (familyGrammar == 'dedicated'))
+    envelope = psg_parse_syslog_envelope(raw)
+    if ((psg_t(envelope) && (envelope['variant'] != 'colon_date')) && envelope['message'].start_with?('LEEF:2.0|'))
+      parsed = psg_extract_leef2_implicit_tab(envelope['message'])
+      if psg_t(parsed)
+        body = {'leef_header' => parsed['leef_header'], 'leef_extension' => parsed['leef_extension']}
+        return {'fields' => {'syslog' => psg_envelope_to_syslog_fields(envelope), 'body' => body, 'generic' => {'mode' => 'syslog_envelope_leef2_implicit_tab', 'source_raw' => raw, 'message_raw' => envelope['message']}}, 'errors' => []}
+      end
+    end
+  end
   claim = ((familyGrammar == 'dedicated') ? psg_structured_family_claim(raw) : :psg_null)
   if psg_t(claim)
-    parsed = psg_extract_structured_family(raw, ((claim == 'CEF') ? 'cef' : 'leef'))
-    if psg_t(parsed['errors'].length)
+    parsed_2 = psg_extract_structured_family(raw, ((claim == 'CEF') ? 'cef' : 'leef'))
+    if psg_t(parsed_2['errors'].length)
       return {'fields' => {}, 'errors' => [(((('The event claims to be ' + claim) + ' but does not match the ') + claim) + ' grammar; it is not read as generic key=value')]}
     end
-    return {'fields' => psg_with_body_text({'body' => parsed['fields'], 'generic' => {'mode' => ((claim == 'CEF') ? 'structured_family_cef' : 'structured_family_leef'), 'source_raw' => raw}}, ((claim == 'CEF') ? 'cef' : 'leef'), raw), 'errors' => []}
+    return {'fields' => psg_with_body_text({'body' => parsed_2['fields'], 'generic' => {'mode' => ((claim == 'CEF') ? 'structured_family_cef' : 'structured_family_leef'), 'source_raw' => raw}}, ((claim == 'CEF') ? 'cef' : 'leef'), raw), 'errors' => []}
   end
   enveloped = ((familyGrammar == 'dedicated') ? psg_enveloped_family_claim(raw) : :psg_null)
   if psg_t(enveloped)

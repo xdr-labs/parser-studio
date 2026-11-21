@@ -25,12 +25,13 @@ import {parseJavaStacktrace} from '../javaStacktrace';
 import {defaultGuidedOptions} from './contract';
 import ParserIdentityCard from './ParserIdentityCard';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
-import {buildSourceReviewedGenericStructuralDraft} from './genericStructuralAutoDraft';
+import {buildSourceReviewedBoundedDraft,headerlessCsvEvents} from './genericStructuralAutoDraft';
 import {inspectZeekReview} from './zeekReview';
 
 
 import AutoParserAIReview from './AutoParserAIReview';
 import {requestMultiPassBatchPreview,requestMultiPassPreview,type MultiPassSourcePreview} from './multipassPreviewClient';
+import {sourceTextForByteRange} from './sourceByteSelection';
 import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './multipassSourceHighlights';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
 import PythonTestSenderPanel from './PythonTestSenderPanel';
@@ -655,9 +656,14 @@ export default function AutoParser({
    if(!analysisRun.isCurrent(run))return;
    // The bounded compiler can resolve a partial source diagnostic only when
    // its strict grammar preserves the same complete set of original records.
-   const automatic=!advanced&&draft.format==='auto'&&report.unsupported>0&&
-     review.events.length>0
-     ?buildSourceReviewedGenericStructuralDraft(original,draft,review):null;
+   // A line that only reads as positional CSV without column names (no PRI in front of a Syslog-wrapped
+   // firewall record, for example) is not "unsupported" for the first scan, but it has no field meaning
+   // either. The bounded compiler is asked for it too. Whatever opened the route, an event the first scan
+   // read as headerless CSV is adopted only with a reading that names its columns from a verified record
+   // layout (buildSourceReviewedBoundedDraft); otherwise the CSV column review stays.
+   const headerlessCsv=headerlessCsvEvents(report.events);
+   const automatic=!advanced&&draft.format==='auto'&&review.events.length>0&&(report.unsupported>0||csvFound)
+     ?buildSourceReviewedBoundedDraft(original,draft,review,headerlessCsv):null;
    // Finish before a successful automatic draft adoption changes the identity.
    analysisRun.finish(run);
    setMultiPass(review);
@@ -1208,6 +1214,11 @@ export default function AutoParser({
      </section>}
      {step===2&&<NormalizationMappingReview
        draft={draft} setDraft={setDraft} suite={suite}
+       originalRawSample={sample}
+       multipassSourceSample={multiPass?.raw}
+       multipassResiduals={multiPass?.raw===sample?multiPass.events.map(event=>event.preview.residuals):undefined}
+       multipassRawEvents={multiPass?.raw===sample?multiPass.events.map(event=>sourceTextForByteRange(multiPass.raw,event.startByte,event.endByte)??''):undefined}
+       onReviewResiduals={()=>setStep(1)}
        selected={selected} setSelected={setSelected} pending={pending}
        onBack={()=>setStep(1)} onContinue={()=>{setNavigationHint('');setFurthestStep(3);setStep(3);}}/>}
      {step===3&&<section aria-label="Create Parser stage">
