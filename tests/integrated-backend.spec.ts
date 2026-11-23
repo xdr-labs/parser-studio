@@ -61,7 +61,7 @@ async function verifyGeneratedDraftPair(
 
 // The Auto Parser routes a mixed sample by reading family (@reading_family): every family gets its official fields.
 // Recipe v0.2 cannot represent per-event routing, so no staged recipe is reviewed for such a draft; the routed
-// project itself is what the backend validates and compiles.
+// project itself is what the backend validates and compiles (CI 45170112223, local Chromium run f23).
 type RoutedBody={recipe?:unknown;normalization?:{eventProfiles?:{discriminator?:string;variants?:Array<{equals:string}>}};
   project?:{normalization?:{eventProfiles?:{discriminator?:string;variants?:Array<{equals:string}>}}}};
 function expectRoutedMixedProject(bodies:readonly string[],families:readonly string[]){
@@ -73,7 +73,8 @@ function expectRoutedMixedProject(bodies:readonly string[],families:readonly str
     expect(project.normalization?.eventProfiles?.variants?.map(variant=>variant.equals).sort()).toEqual([...families].sort());
   }
   expect(parsed.filter(body=>body.recipe).length).toBe(0);
-  expect(bodies.length).toBeGreaterThanOrEqual(3);
+  // The validate and generate requests carry the routed project; nothing else is posted to the pair API.
+  expect(routed.length).toBe(bodies.length);
 }
 
 test.describe('actual Chromium UI ↔ exact same-HEAD authoring backend; target APIs isolated',()=>{
