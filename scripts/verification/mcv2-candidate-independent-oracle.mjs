@@ -329,6 +329,22 @@ assert.deepEqual(mixedRead(['rfc5424_kv','rfc5424_kv'],[inBody,other],'body.srci
 assert.deepEqual(mixedRead(['rfc3164_kv','rfc3164_kv'],[inBody,other],'body.srcip'),['HIGH'],'RFC 3164 body of a mixed reading');
 assert.deepEqual(mixedRead(['json','json'],[inBody,other],'body.srcip'),['REVIEW'],'a JSON object called body in a mixed reading');
 assert.deepEqual(read('mixed',[inBody,other],'body.srcip'),['REVIEW'],'a mixed event without its reading family');
+// CEF/LEEF extension keys the specification defines (src, dst, spt, dpt; LEEF srcPort, dstPort) are read like
+// a source named as its official field, inside a CEF or LEEF record only.
+const cefRecord={cef_version:'0',src:'192.0.2.1',dst:'198.51.100.2',spt:'40000',dpt:'443',proto:'TCP'};
+const cefOther={cef_version:'0',suser:'admin'};
+assert.deepEqual(read('cef',[cefRecord,cefOther],'dst'),['HIGH'],'CEF dst in some records');
+assert.deepEqual(read('cef',[cefRecord,cefOther],'dpt'),['HIGH'],'CEF dpt beside proto=TCP in some records');
+assert.deepEqual(read('cef',[cefRecord,{...cefRecord,dst:'198.51.100.3'},cefOther],'dst'),['HIGH'],'CEF dst in two records of three');
+assert.deepEqual(read('cef',[cefRecord,{suser:'admin'}],'dst'),['HIGH'],'a record without the key needs no CEF version');
+assert.deepEqual(read('syslog_rfc5424',[{body:cefRecord},{body:cefOther}],'body.dst'),['HIGH'],'CEF dst in a Syslog body');
+assert.deepEqual(read('leef',[{leef_version:'2.0',src:'192.0.2.1',dstPort:'443',proto:'6'},{leef_version:'2.0',usrName:'a'}],'dstPort'),['HIGH'],'LEEF dstPort');
+assert.deepEqual(read('kv',[cefRecord,cefOther],'dst'),['REVIEW'],'the same names in a key=value log');
+const {cef_version:_v,...bareCef}=cefRecord;
+assert.deepEqual(read('syslog_rfc5424',[{cef_version:'0',body:bareCef},{body:cefOther}],'body.dst'),['REVIEW'],'the version beside the body is not the version of the body');
+assert.deepEqual(read('cef',[bareCef,cefOther],'dst'),['REVIEW'],'no CEF version in the record of the key');
+assert.deepEqual(read('cef',[bareCef,cefRecord,cefOther],'dst'),['REVIEW'],'one record of the key without CEF version');
+assert.deepEqual(read('cef',[{...cefRecord,dst:'db01.example.com'},cefOther],'dst'),['REVIEW'],'a CEF dst that is not an address');
 assert.deepEqual(mod.suggestNormalizationCandidatesFromSuite({events:[inBody,other].map(fields=>
   ({fields,effectiveFormat:'json',readingFamily:'rfc5424_kv'}))},[]).filter(r=>r.source==='body.srcip').map(r=>r.confidence),
   ['REVIEW'],'a reading family is read only for a mixed event');

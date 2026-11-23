@@ -47,6 +47,39 @@ function recordLevelSource(source:string,formats:readonly (string|undefined)[]):
     format==='syslog_rfc3164'||format==='syslog_rfc5424'?SYSLOG_BODY_CONTAINER.test(source):false);
 }
 const URL_SHAPED=/^(?:[a-z][a-z0-9+.-]*:\/\/\S+|\/\S*)$/iu;
+/** Extension keys whose meaning the format specification defines: the ArcSight CEF Implementation Standard
+ * (src sourceAddress, dst destinationAddress, spt sourcePort, dpt destinationPort, proto transportProtocol,
+ * request requestUrl) and the IBM QRadar LEEF predefined attributes (src, dst, srcPort, dstPort, proto, url).
+ * In the extension of a CEF or LEEF record such a key has no reading other than its official field, like a
+ * source named as the field itself, so the sparse rule treats both alike (golden r2_trendmicro_cef: a Deep
+ * Security Agent packet record carries dst, spt and dpt, the Manager record of the same sample does not).
+ * A record is CEF or LEEF when the container of the key holds the version the reader writes for its header
+ * (cef_version, leef_version) and the event was not read as JSON, key=value or CSV, where such a name is the
+ * author's own. */
+const SPEC_DEFINED_EXTENSION_KEYS:readonly {version:string;keys:Readonly<Record<string,readonly string[]>>}[]=[
+  {version:'cef_version',keys:{src:['srcip'],dst:['dstip'],spt:['srcport'],dpt:['dstport'],
+    proto:['proto','proto_name'],request:['url']}},
+  {version:'leef_version',keys:{src:['srcip'],dst:['dstip'],srcPort:['srcport'],dstPort:['dstport'],
+    proto:['proto','proto_name'],url:['url']}},
+];
+const AUTHOR_NAMED_READINGS=new Set(['json','kv','csv']);
+/** The official fields a CEF/LEEF specification assigns to the source in every event that carries it. */
+function specDefinedTargets(source:string,events:readonly Record<string,unknown>[],
+  formats:readonly (string|undefined)[]):readonly string[]{
+  const at=source.lastIndexOf('.');
+  const container=at<0?'':source.slice(0,at),key=source.slice(at+1);
+  let targets:readonly string[]=[];
+  for(const [index,fields] of events.entries()){
+    if(!lookupFieldValue(fields,source).found)continue;
+    if(AUTHOR_NAMED_READINGS.has(formats[index]||''))return [];
+    const holder=container?objectAt(fields,container):fields;
+    const spec=holder?SPEC_DEFINED_EXTENSION_KEYS.find(item=>Object.prototype.hasOwnProperty.call(holder,item.version)):undefined;
+    const named=spec&&Object.prototype.hasOwnProperty.call(spec.keys,key)?spec.keys[key]!:[];
+    if(!named.length||(targets.length&&targets!==named))return [];
+    targets=named;
+  }
+  return targets;
+}
 type Looked={found:true;value:unknown}|{found:false};
 function sparseSafeSource(source:string,target:string,values:readonly Looked[],
   formats:readonly (string|undefined)[]):boolean{
@@ -450,7 +483,9 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   // explicit port labels keep the full-coverage rule.
   const informative=informativeValues.length;
   const carrierFormats=events.flatMap((fields,index)=>lookupFieldValue(fields,source).found?[formats[index]]:[]);
-  const namedAsTarget=SPARSE_SAFE_TARGETS.has(target)&&leaf.toLowerCase()===target&&sparseSafeSource(source,target,informativeValues,carrierFormats);
+  const namedAsTarget=SPARSE_SAFE_TARGETS.has(target)&&
+    (leaf.toLowerCase()===target||specDefinedTargets(source,events,formats).includes(target))&&
+    sparseSafeSource(source,target,informativeValues,carrierFormats);
   // Unknown protocol evidence never authorizes an official port. A port that only some record families carry,
   // or an alias whose meaning depends on the protocol, needs the record itself to name TCP or UDP in every
   // event that has the port: an ICMP record of another family may name its protocol differently, or not at all.
