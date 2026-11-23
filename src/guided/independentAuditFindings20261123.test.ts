@@ -198,3 +198,19 @@ describe('re-audit Q2-4 and Q2-5: a family result may not drop a value of the fa
       .toEqual({ok:false,reason:'FAMILY_SOURCE_REMOVED'});
   });
 });
+
+// Third independent audit of 2026-11-23 (bdf76cd). SYNTHETIC patterns from the auditor.
+describe('re-audit Q3-2 and Q3-3: repeated captures and white-space escapes in a ChatGPT regex',()=>{
+  it('rejects a capture inside a repeated group: only its last repetition is kept',()=>{
+    expect(regexReadsUncapturedText('^(?<cmd>\\S+)(?: (?<flag>-[a-z]))*$')).toBe(true);
+    expect(regexReadsUncapturedText('^(?<cmd>\\S+)(?: (?<flag>-[a-z])){2}$')).toBe(true);
+    // The whole repeated text in one capture keeps every repetition.
+    expect(regexReadsUncapturedText('^(?<cmd>\\S+)(?<flags>(?: -[a-z])*)$')).toBe(false);
+  });
+  it('counts \\x20, \\x09 and \\r as white space, and an optional quote or comma as data',()=>{
+    expect(regexReadsUncapturedText('^(?<a>\\S+)(?:\\x20)?(?<b>\\S+)$')).toBe(false);
+    expect(regexReadsUncapturedText('^(?<msg>.*?)\\r?$')).toBe(false);
+    expect(regexReadsUncapturedText('^(?<a>\\S+) "?(?<user>[^" ]+)"? (?<b>\\S+)$')).toBe(true);
+    expect(regexReadsUncapturedText('^(?<a>[^,]+),?(?<b>\\S+)$')).toBe(true);
+  });
+});
