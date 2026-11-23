@@ -535,6 +535,9 @@ function watchguardTrafficMonitorProfile(raw:string):Record<string,unknown>|null
   const head=RX_WATCHGUARD_TRAFFIC_MONITOR.exec(raw);
   if(!head||!isoTimestampOk(head[1]!+'T'+head[2]!)||!ipToken(head[5]!)||!ipToken(head[6]!))return null;
   if(head[9]!==undefined&&(Number(head[9])>65535||Number(head[10])>65535))return null;
+  // The layout has port positions for TCP and UDP; two numbers after an ICMP or other protocol are not documented
+  // as ports, so the line is not read as this layout (independent audit 2026-11-23, F3).
+  if(head[9]!==undefined&&!/^(?:[Tt][Cc][Pp]|[Uu][Dd][Pp])$/u.test(head[8]!))return null;
   if(head[15]!==undefined&&Number(head[15])>255)return null;
   const details=scanProfileTokens(raw,head[0].length);
   if(!details||details.tokens.length>0||details.groups.length>0)return null;
@@ -583,7 +586,9 @@ function merakiProfile(raw:string):Record<string,unknown>|null{
     pos+=pair[0].length;
   }
   if(typeof kv.src!=='string'||typeof kv.dst!=='string')return null;
-  const header:Record<string,unknown>={timestamp:head[1],device:head[2],record_type:head[3]};
+  // The leading epoch time is not named `timestamp`: an IDS record has a `timestamp=` pair of its own with
+  // another value, and the two must not read as one field (golden meraki_mx_flows_ids, field linkage).
+  const header:Record<string,unknown>={epoch:head[1],device:head[2],record_type:head[3]};
   if(head[4]!==undefined)header.event_type=head[4];
   return {meraki_header:header,generic};
 }

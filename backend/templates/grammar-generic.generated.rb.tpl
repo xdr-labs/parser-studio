@@ -969,7 +969,7 @@ def psg_meraki_profile(raw)
   if (!kv['src'].is_a?(String) || !kv['dst'].is_a?(String))
     return :psg_null
   end
-  header = {'timestamp' => head[1], 'device' => head[2], 'record_type' => head[3]}
+  header = {'epoch' => head[1], 'device' => head[2], 'record_type' => head[3]}
   if !head[4].nil?
     header['event_type'] = head[4]
   end
@@ -2120,6 +2120,9 @@ def psg_watchguard_traffic_monitor_profile(raw)
     return :psg_null
   end
   if (!head[9].nil? && ((psg_num(head[9]) > 65535) || (psg_num(head[10]) > 65535)))
+    return :psg_null
+  end
+  if (!head[9].nil? && !/\A(?:[Tt][Cc][Pp]|[Uu][Dd][Pp])\z/.match?(head[8]))
     return :psg_null
   end
   if (!head[15].nil? && (psg_num(head[15]) > 255))

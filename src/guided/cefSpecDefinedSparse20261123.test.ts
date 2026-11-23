@@ -17,7 +17,11 @@ const cap={authoring:{extractionFormats:['json','kv','csv','mixed','cef','leef',
   verification:{engineVerified:false,targetImportVerified:false}} as unknown as BackendCapabilities;
 
 function read(format:string,...events:Record<string,unknown>[]){
-  const suite={events:events.map(fields=>({fields,effectiveFormat:format}))} as unknown as SuiteResult;
+  return readBody(format,undefined,...events);
+}
+/** bodyKind: the grammar the Syslog reader reports for the body of each event. */
+function readBody(format:string,bodyKind:string|undefined,...events:Record<string,unknown>[]){
+  const suite={events:events.map(fields=>({fields,effectiveFormat:format,bodyKind}))} as unknown as SuiteResult;
   return (source:string)=>suggestNormalizationCandidatesFromSuite(suite,[]).filter(item=>item.source===source)
     .map(item=>[item.target,item.confidence]);
 }
@@ -44,7 +48,7 @@ describe('a CEF or LEEF extension key the specification defines, in some record 
     expect(read('cef',cef,other)('proto')).toEqual([['proto_name','HIGH']]);
     expect(read('leef',leef,{leef_version:'2.0',usrName:'admin'})('dstPort')).toEqual([['dstport','HIGH']]);
     expect(read('leef',leef,{leef_version:'2.0',usrName:'admin'})('proto')).toEqual([['proto','HIGH']]);
-    expect(read('syslog_rfc5424',{body:cef},{body:other})('body.dpt')).toEqual([['dstport','HIGH']]);
+    expect(readBody('syslog_rfc5424','cef',{body:cef},{body:other})('body.dpt')).toEqual([['dstport','HIGH']]);
   });
 
   it('stays a review proposal outside a CEF or LEEF reading, or when the value or protocol does not fit',()=>{
@@ -52,6 +56,13 @@ describe('a CEF or LEEF extension key the specification defines, in some record 
     // The same names in a key=value or JSON log are the author's own (the full-coverage rule applies).
     expect(read('kv',{...cef},{cef_version:'0',suser:'admin'})('dst')).toEqual([['dstip','REVIEW']]);
     expect(read('json',{...cef},{cef_version:'0',suser:'admin'})('dst')).toEqual([['dstip','REVIEW']]);
+    // Independent audit 2026-11-23 (F2): a JSON or key=value Syslog body that names a key cef_version is not CEF.
+    expect(readBody('syslog_rfc5424','json',{body:cef},{body:{cef_version:'0',suser:'admin'}})('body.dst'))
+      .toEqual([['dstip','REVIEW']]);
+    expect(readBody('syslog_rfc5424','kv',{body:cef},{body:{cef_version:'0',suser:'admin'}})('body.dst'))
+      .toEqual([['dstip','REVIEW']]);
+    expect(read('syslog_rfc5424',{body:cef},{body:{cef_version:'0',suser:'admin'}})('body.dst'))
+      .toEqual([['dstip','REVIEW']]);
     // A CEF record without the version the reader writes is not known to be CEF.
     const {cef_version:_version,...bare}=cef;
     expect(read('cef',bare,{suser:'admin'})('dst')).toEqual([['dstip','REVIEW']]);

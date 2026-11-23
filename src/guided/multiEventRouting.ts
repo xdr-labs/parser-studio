@@ -77,6 +77,15 @@ export function suggestEventProfiles(
  }
  return {ok:true,config:{discriminator,unknown:'reject',variants},common};
 }
+/**
+ * A carried family mapping keeps, in a family-routed draft, a source that only another family of the sample
+ * showed: as a vendor field, so that an event of this family that carries it keeps its value (a mixed parser
+ * emits mapped sources only; independent audit 2026-11-23, F1). It reads nothing in the sample records of its
+ * family, so the family-scoped ChatGPT path leaves it out of the single-family draft and keeps it on merge.
+ */
+const CARRIED_FAMILY_MAPPING_ID=/^family-\d+-carried-\d+$/u;
+export const carriedFamilyMappingId=(family:number,n:number)=>'family-'+String(family)+'-carried-'+String(n);
+export const isCarriedFamilyMapping=(rule:MappingRule)=>CARRIED_FAMILY_MAPPING_ID.test(rule.id);
 export function validateEventProfiles(config?:EventProfileConfig):string|null{
  if(!config)return null;
  if(!(safe(config.discriminator)||config.discriminator===READING_FAMILY_DISCRIMINATOR)||config.unknown!=='reject'||

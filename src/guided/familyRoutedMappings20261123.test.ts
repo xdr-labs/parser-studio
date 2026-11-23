@@ -49,11 +49,21 @@ describe('a sample of two event families maps each family from its own source pa
   }
   it('no event family holds one destination twice, and no event gets a value of another event',()=>{
     const built=build([PAN,CEF]);
-    const shared=new Set(built.draft.mappings.map(mapping=>mapping.target));
+    // A destination is the official field or the vendor field the mapping writes (familyScopedAssist outputOf):
+    // since independent audit 2026-11-23 (F1) a family also carries the sources of the other families as vendor
+    // fields, so a vendor field may share its name with an official field of the family (generic.fields.action
+    // as vendor "action" beside body.act -> action), never with another destination of the same kind.
+    const groups=built.draft.guided!.groups;
+    const destination=(mapping:{id:string;target:string})=>
+      (groups[mapping.id]==='vendor_fields'?'vendor:':'official:')+mapping.target;
+    const shared=new Set(built.draft.mappings.map(destination));
     for(const variant of built.draft.eventProfiles!.variants){
-      const targets=variant.mappings.map(mapping=>mapping.target);
+      const targets=variant.mappings.map(destination);
       expect(new Set(targets).size).toBe(targets.length);
       expect(targets.filter(target=>shared.has(target))).toEqual([]);
+      // A carried source is never official in a family whose records do not have it.
+      for(const mapping of variant.mappings.filter(rule=>rule.id.includes('-carried-')))
+        expect(groups[mapping.id]).toBe('vendor_fields');
     }
     const [pan,cef]=official(built.draft,[PAN,CEF].join('\n'));
     expect(Object.values(pan!).some(value=>CEF.includes(value)&&!PAN.includes(value))).toBe(false);

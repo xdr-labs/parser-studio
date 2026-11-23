@@ -7,7 +7,7 @@ import {defaultGuidedOptions,type FieldGroup} from './contract';
 import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
 import {originalContainerCompilerGate} from './sourceContainerCompilerGate';
 import {vendorFieldNames} from './vendorFieldNames';
-import {validateEventProfiles,type EventProfile} from './multiEventRouting';
+import {carriedFamilyMappingId,validateEventProfiles,type EventProfile} from './multiEventRouting';
 import type {MultiPassSourcePreview} from './multipassPreviewClient';
 
 const MAX_EXPLICIT_MAPPINGS=100;
@@ -219,8 +219,13 @@ export function familyRoutedDraft(
     const mappings:MappingRule[]=[];
     let n=0;
     for(const mapping of candidate.mappings){
-      if(!local.has(mapping.source)||!decided.has(mapping.source))continue;
-      const [rule,group]=apply(mapping,decided.get(mapping.source)??null,'family-'+String(index)+'-'+String(n++));
+      // Every family keeps every source that a family mapping names, as a vendor field where its own records did
+      // not decide an official one: an event of this family may carry a key the sample showed only in another
+      // family, and a mixed parser emits mapped sources only (independent audit 2026-11-23, F1: user=alice and a
+      // second srcip were dropped from FULL events). A source the records of this family do not have is carried.
+      if(!local.has(mapping.source))continue;
+      const id=decided.has(mapping.source)?'family-'+String(index)+'-'+String(n++):carriedFamilyMappingId(index,n++);
+      const [rule,group]=apply(mapping,decided.get(mapping.source)??null,id);
       mappings.push(rule);groups[rule.id]=group;
     }
     return {name,equals:name,mappings};

@@ -230,6 +230,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   let matched = false;
   let parseStatus: EventParseStatus = 'UNKNOWN';
   let readingFamily: string | undefined;
+  let bodyKind: string | undefined;
   if (raw.length > MAX_LINE_CHARS) {
     error('break', 'LINE_TOO_LONG', 'Event exceeds ' + MAX_LINE_CHARS + ' characters');
   } else if(new TextEncoder().encode(raw).byteLength>(draft.guided?.receiver.messageLimit??65536)){
@@ -246,6 +247,8 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     fields = extraction.fields;
     const family = getTag(extraction, 'mixedFamily');
     if (typeof family === 'string' && family) readingFamily = family;
+    const kind = getTag(extraction, 'bodyKind') ?? getTag(extraction.fields, 'bodyKind');
+    if (typeof kind === 'string' && kind) bodyKind = kind;
     matched = Object.keys(fields).length > 0;
     // Parsing Success Contract: the extractor's own "no errors" is not proof. For a key=value body the
     // original line is re-read by an independent tokenizer, and a pair that is visible there but missing
@@ -495,6 +498,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     id: 'event-' + (index + 1), line, raw, detected, effectiveFormat, fields, normalized, unmapped,
     ...(draft.eventProfiles?{eventFamily:family.name}:{}),
     ...(readingFamily?{readingFamily}:{}),
+    ...(bodyKind?{bodyKind}:{}),
     ...(wrapped.hops.length?{forwarderHops:wrapped.hops}:{}),
     matched, extracted: matched, normalizedOk,
     parseStatus,

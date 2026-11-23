@@ -12,7 +12,7 @@
  */
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
 import {lookupFieldValue} from '../fieldPaths';
-import {eventFamilyValue,validateEventProfiles,type EventProfile} from './multiEventRouting';
+import {eventFamilyValue,isCarriedFamilyMapping,validateEventProfiles,type EventProfile} from './multiEventRouting';
 import type {FieldGroup} from './contract';
 
 export const UNRECOGNIZED_SCOPE='unrecognized';
@@ -63,13 +63,15 @@ export function familySource(suite:SuiteResult,scope:FamilyScope):string{
   return scope.records.map(index=>suite.events[index]!.raw).join('\n');
 }
 
-/** The ordinary draft that reads one family as the routed draft does: shared plus family mappings. */
+/** The ordinary draft that reads one family as the routed draft does: shared plus family mappings. A carried
+ * mapping (isCarriedFamilyMapping) reads nothing in the records of the family and is left out. */
 export function projectFamilyDraft(draft:ParserDraft,name:string):ParserDraft|null{
   const profiles=draft.eventProfiles;
   if(!profiles)return null;
   const variant=profiles.variants.find(item=>item.name===name);
   if(!variant&&name!==UNRECOGNIZED_SCOPE)return null;
-  const projected:ParserDraft={...draft,mappings:[...draft.mappings,...(variant?.mappings??[])]};
+  const own=(variant?.mappings??[]).filter(rule=>!isCarriedFamilyMapping(rule));
+  const projected:ParserDraft={...draft,mappings:[...draft.mappings,...own]};
   delete projected.eventProfiles;
   return projected;
 }
@@ -112,7 +114,8 @@ export function mergeFamilyCandidate(
     }))return {ok:false,reason:'SOURCE_NOT_IN_FAMILY'};
   // A result that leaves the family as it is is reported, not applied as a change (audit F4).
   if(index>=0){
-    const before=profiles.variants[index]!.mappings.map(rule=>keyOf(draft,rule)).sort();
+    const before=profiles.variants[index]!.mappings.filter(rule=>!isCarriedFamilyMapping(rule))
+      .map(rule=>keyOf(draft,rule)).sort();
     const after=own.map(rule=>keyOf(candidate,rule)).sort();
     if(JSON.stringify(before)===JSON.stringify(after))return {ok:false,reason:'NO_FAMILY_CHANGE'};
   }
@@ -134,8 +137,13 @@ export function mergeFamilyCandidate(
   });
   let variants:EventProfile[];
   if(index>=0){
-    for(const rule of profiles.variants[index]!.mappings)delete groups[rule.id];
-    variants=profiles.variants.map((variant,i)=>i===index?{...variant,mappings}:variant);
+    // The carried mappings stay, unless the result now maps their source itself or writes their output.
+    const outputs=[...draft.mappings.map(rule=>outputOf(draft,rule)),...own.map(rule=>outputOf(candidate,rule))];
+    const sources=new Set(own.map(rule=>rule.source));
+    const carried=profiles.variants[index]!.mappings.filter(rule=>isCarriedFamilyMapping(rule)&&
+      !sources.has(rule.source)&&!outputs.some(other=>overlaps(other,outputOf(draft,rule))));
+    for(const rule of profiles.variants[index]!.mappings)if(!carried.includes(rule))delete groups[rule.id];
+    variants=profiles.variants.map((variant,i)=>i===index?{...variant,mappings:[...mappings,...carried]}:variant);
   }else{
     const values=new Set(suite.events.filter(event=>!event.eventFamily||
       !profiles.variants.some(variant=>variant.name===event.eventFamily))
@@ -179,7 +187,9 @@ export function familyPromptContext(draft:ParserDraft,scopes:FamilyScope[],selec
     const variant=profiles.variants.find(item=>item.name===scope.name);
     lines.push(scope.name+': '+countText(scope.records.length)+', '+stateText(scope.state)+
       (scope.name===selected?' (selected)':'')+(variant?'; discriminator value '+JSON.stringify(variant.equals):''));
-    if(variant)lines.push(...(variant.mappings.length?variant.mappings.map(rule=>ruleText(draft,rule)):['  - no type-specific mappings']));
+    // A carried mapping is named as such: it keeps a source of another event type and is kept on merge.
+    if(variant)lines.push(...(variant.mappings.length?variant.mappings.map(rule=>ruleText(draft,rule)+
+      (isCarriedFamilyMapping(rule)?' [kept for a source of another event type]':'')):['  - no type-specific mappings']));
   }
   return lines.join('\n');
 }

@@ -446,7 +446,7 @@ def parserstudio_normalize(original)
     first_failed ||= failure
     normalized['parserstudio_event_family'] = profile['name']
   end
-  hops = original['__parserstudio_forwarder_hops']
+  hops = psg_get_tag(original, 'forwarderHops')
   normalized['parserstudio_transport'] = {'forwarder_hops'=>hops} if hops && !hops.empty?
   raise ParserstudioFieldError.new(first_failed) if first_failed
   parserstudio_verify_proto_pair!(normalized)

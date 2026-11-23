@@ -53,16 +53,17 @@ const URL_SHAPED=/^(?:[a-z][a-z0-9+.-]*:\/\/\S+|\/\S*)$/iu;
  * In the extension of a CEF or LEEF record such a key has no reading other than its official field, like a
  * source named as the field itself, so the sparse rule treats both alike (golden r2_trendmicro_cef: a Deep
  * Security Agent packet record carries dst, spt and dpt, the Manager record of the same sample does not).
- * A record is CEF or LEEF when the container of the key holds the version the reader writes for its header
- * (cef_version, leef_version) and the event was not read as JSON, key=value or CSV, where such a name is the
- * author's own. A documented positional layout defines its positions the same way: the WatchGuard Traffic
+ * A record is CEF or LEEF when the CEF or LEEF grammar read it (cefLeefReading) and the container of the key
+ * holds the version that grammar writes for its header (cef_version, leef_version). A JSON or key=value body is
+ * neither, whatever its keys are called: an author-written cef_version must not switch on CEF meanings
+ * (independent audit 2026-11-23, F2). A documented positional layout defines its positions the same way: the WatchGuard Traffic
  * Monitor layout (Generic Structural mode watchguard_traffic_monitor) has a source and a destination port
  * position that an ICMP message leaves out (golden r2_watchguard_traffic). */
-const SPEC_DEFINED_EXTENSION_KEYS:readonly {version?:string;mode?:string;container?:string;
+const SPEC_DEFINED_EXTENSION_KEYS:readonly {version?:string;reading?:string;mode?:string;container?:string;
   keys:Readonly<Record<string,readonly string[]>>}[]=[
-  {version:'cef_version',keys:{src:['srcip'],dst:['dstip'],spt:['srcport'],dpt:['dstport'],
+  {version:'cef_version',reading:'cef',keys:{src:['srcip'],dst:['dstip'],spt:['srcport'],dpt:['dstport'],
     proto:['proto','proto_name'],request:['url']}},
-  {version:'leef_version',keys:{src:['srcip'],dst:['dstip'],srcPort:['srcport'],dstPort:['dstport'],
+  {version:'leef_version',reading:'leef',keys:{src:['srcip'],dst:['dstip'],srcPort:['srcport'],dstPort:['dstport'],
     proto:['proto','proto_name'],url:['url']}},
   {mode:'watchguard_traffic_monitor',container:'watchguard',keys:{src_ip:['srcip'],dst_ip:['dstip'],
     src_port:['srcport'],dst_port:['dstport']}},
@@ -71,20 +72,27 @@ function readingMode(fields:Record<string,unknown>):unknown{
   const mode=lookupFieldValue(fields,'generic.mode');
   return mode.found?mode.value:undefined;
 }
-const AUTHOR_NAMED_READINGS=new Set(['json','kv','csv']);
+/** Which of the CEF and LEEF grammars read an event, if one did: its format, the family the mixed router chose, or
+ * the body the Syslog or Generic Structural reader reports (bodyKind). */
+const CEF_LEEF_BODY_READERS=new Set(['syslog_rfc3164','syslog_rfc5424','generic_structural']);
+function cefLeefReading(event:SuiteResult['events'][number]):string|undefined{
+  const format=event.effectiveFormat;
+  const kind=format==='mixed'?/(?:^|_)(cef|leef)$/u.exec(event.readingFamily??'')?.[1]:
+    format==='cef'||format==='leef'?format:CEF_LEEF_BODY_READERS.has(format??'')?event.bodyKind:undefined;
+  return kind==='cef'||kind==='leef'?kind:undefined;
+}
 /** The official fields a CEF/LEEF specification assigns to the source in every event that carries it. */
 function specDefinedTargets(source:string,events:readonly Record<string,unknown>[],
-  formats:readonly (string|undefined)[]):readonly string[]{
+  readings:readonly (string|undefined)[]):readonly string[]{
   const at=source.lastIndexOf('.');
   const container=at<0?'':source.slice(0,at),key=source.slice(at+1);
   let targets:readonly string[]=[];
   for(const [index,fields] of events.entries()){
     if(!lookupFieldValue(fields,source).found)continue;
-    if(AUTHOR_NAMED_READINGS.has(formats[index]||''))return [];
     const holder=container?objectAt(fields,container):fields;
     const spec=holder?SPEC_DEFINED_EXTENSION_KEYS.find(item=>item.mode!==undefined
       ?container===item.container&&readingMode(fields)===item.mode
-      :Object.prototype.hasOwnProperty.call(holder,item.version!)):undefined;
+      :readings[index]===item.reading&&Object.prototype.hasOwnProperty.call(holder,item.version!)):undefined;
     const named=spec&&Object.prototype.hasOwnProperty.call(spec.keys,key)?spec.keys[key]!:[];
     if(!named.length||(targets.length&&targets!==named))return [];
     targets=named;
@@ -433,7 +441,8 @@ export function valueFitsNormalizationTarget(
     meetsStellar7ValueConstraints(target,value,converted.value);
 }
 function candidateForSource(source:string,events:Record<string,unknown>[],existing:MappingRule[],
- existingGroups:Record<string,FieldGroup>,formats:readonly (string|undefined)[]=[]):NormalizationCandidate|null{
+ existingGroups:Record<string,FieldGroup>,formats:readonly (string|undefined)[]=[],
+ readings:readonly (string|undefined)[]=[]):NormalizationCandidate|null{
   // Generic Structural space_kv lets an unquoted value run up to the next key,
   // so `dport=53 pattern: allow all` stores the whole text under kv.dport and
   // its whitespace-separated pieces under atoms.dport_001... A port or IP never
@@ -495,7 +504,7 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   const informative=informativeValues.length;
   const carrierFormats=events.flatMap((fields,index)=>lookupFieldValue(fields,source).found?[formats[index]]:[]);
   const namedAsTarget=SPARSE_SAFE_TARGETS.has(target)&&
-    (leaf.toLowerCase()===target||specDefinedTargets(source,events,formats).includes(target))&&
+    (leaf.toLowerCase()===target||specDefinedTargets(source,events,readings).includes(target))&&
     sparseSafeSource(source,target,informativeValues,carrierFormats);
   // Unknown protocol evidence never authorizes an official port. A port that only some record families carry,
   // or an alias whose meaning depends on the protocol, needs the record itself to name TCP or UDP in every
@@ -597,7 +606,8 @@ export function suggestNormalizationCandidatesFromSuite(
   const proposed:NormalizationCandidate[]=[];
   const candidatesByTarget=new Map<string,NormalizationCandidate[]>();
   for(const source of scan.paths){
-    const candidate=candidateForSource(source,fields,existing,existingGroups,suite.events.map(readingFormat));
+    const candidate=candidateForSource(source,fields,existing,existingGroups,suite.events.map(readingFormat),
+      suite.events.map(cefLeefReading));
     if(!candidate)continue;
     candidatesByTarget.set(candidate.target,[...(candidatesByTarget.get(candidate.target)??[]),candidate]);
     proposed.push(candidate);

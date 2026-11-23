@@ -61,7 +61,7 @@ describe('WatchGuard Traffic Monitor layout',()=>{
 describe('Meraki syslog layout',()=>{
   it('ends the pairs at the documented label: the rule is no part of the value of dport',()=>{
     const flows=extractGenericStructural(MERAKI[0]!,undefined,'dedicated');
-    expect(flows.fields).toMatchObject({meraki_header:{timestamp:'948136486.721741837',device:'MX60',record_type:'flows'},
+    expect(flows.fields).toMatchObject({meraki_header:{epoch:'948136486.721741837',device:'MX60',record_type:'flows'},
       generic:{mode:'meraki_flows',kv:{src:'192.168.10.254',dst:'8.8.8.8',protocol:'udp',sport:'9562',dport:'53'},pattern:'allow all'}});
     const ids=extractGenericStructural(MERAKI[1]!,undefined,'dedicated');
     expect(ids.fields).toMatchObject({meraki_header:{record_type:'security_event',event_type:'ids_alerted'},
@@ -78,6 +78,11 @@ describe('Meraki syslog layout',()=>{
     expect(tuple(ids!)).toEqual([undefined,undefined,undefined,undefined]);
     expect(JSON.stringify(ids)).toContain('"src":"192.168.30.10:49243"');
     expect(JSON.stringify(flows)).toContain('"pattern":"allow all"');
+    // The header epoch and the timestamp= pair of the IDS record are two fields with their own names.
+    const idsText=JSON.stringify(ids);
+    expect(idsText).toContain('"epoch":"1490031971.951780201"');
+    expect(idsText).toContain('"timestamp":"1490031971.693691"');
+    expect(idsText).not.toContain('"timestamp":"1490031971.951780201"');
   });
 
   it('declines a line that is not the layout',()=>{

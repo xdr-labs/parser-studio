@@ -95,6 +95,8 @@ export interface EventResult {
   eventFamily?: string;
   /** The family the mixed router read the event with (src/grammar/extractEvent.ts); absent for other formats. */
   readingFamily?: string;
+  /** The body grammar the reader reports for the event (json, kv, cef, leef, csv ...), when it reports one. */
+  bodyKind?: string;
   forwarderHops?: ForwarderHop[];
   unmapped: string[];
   matched: boolean;

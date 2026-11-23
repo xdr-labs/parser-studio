@@ -337,11 +337,31 @@ assert.deepEqual(read('cef',[cefRecord,cefOther],'dst'),['HIGH'],'CEF dst in som
 assert.deepEqual(read('cef',[cefRecord,cefOther],'dpt'),['HIGH'],'CEF dpt beside proto=TCP in some records');
 assert.deepEqual(read('cef',[cefRecord,{...cefRecord,dst:'198.51.100.3'},cefOther],'dst'),['HIGH'],'CEF dst in two records of three');
 assert.deepEqual(read('cef',[cefRecord,{suser:'admin'}],'dst'),['HIGH'],'a record without the key needs no CEF version');
-assert.deepEqual(read('syslog_rfc5424',[{body:cefRecord},{body:cefOther}],'body.dst'),['HIGH'],'CEF dst in a Syslog body');
+// The Syslog and Generic Structural readers report the grammar of the body (bodyKind); the mixed router its family.
+const readBody=(format,kinds,events,source)=>mod.suggestNormalizationCandidatesFromSuite(
+  {events:events.map((fields,index)=>({fields,effectiveFormat:format,bodyKind:kinds[index]}))},[])
+  .filter(r=>r.source===source).map(r=>r.confidence);
+assert.deepEqual(readBody('syslog_rfc5424',['cef','cef'],[{body:cefRecord},{body:cefOther}],'body.dst'),['HIGH'],'CEF dst in a Syslog body');
+assert.deepEqual(readBody('syslog_rfc3164',['cef',undefined],[{body:cefRecord},{body:{note:'x'}}],'body.dst'),['HIGH'],'CEF dst in an RFC 3164 body');
+assert.deepEqual(readBody('generic_structural',['cef','cef'],[{body:cefRecord},{body:cefOther}],'body.dst'),['HIGH'],'CEF dst in a Generic Structural body');
+assert.deepEqual(readBody('syslog_rfc5424',['leef','leef'],[{body:{leef_version:'2.0',src:'192.0.2.1',dstPort:'443',proto:'6'}},{body:{leef_version:'2.0',usrName:'a'}}],'body.dstPort'),['HIGH'],'LEEF dstPort in a Syslog body');
+// F2 (independent audit 2026-11-23): a JSON or key=value body is not CEF, whatever its keys are called.
+assert.deepEqual(readBody('syslog_rfc5424',['json','json'],[{body:cefRecord},{body:cefOther}],'body.dst'),['REVIEW'],'cef_version in a JSON Syslog body');
+assert.deepEqual(readBody('syslog_rfc5424',['kv','kv'],[{body:cefRecord},{body:cefOther}],'body.dst'),['REVIEW'],'cef_version in a key=value Syslog body');
+assert.deepEqual(readBody('syslog_rfc5424',[undefined,undefined],[{body:cefRecord},{body:cefOther}],'body.dst'),['REVIEW'],'a Syslog body of no reported grammar');
+assert.deepEqual(readBody('syslog_rfc5424',['leef','leef'],[{body:cefRecord},{body:cefOther}],'body.dst'),['REVIEW'],'a CEF version in a LEEF body');
+assert.deepEqual(readBody('json',['cef','cef'],[cefRecord,cefOther],'dst'),['REVIEW'],'a JSON reading never has a CEF body');
+assert.deepEqual(readBody('cef',['json','json'],[cefRecord,cefOther],'dst'),['HIGH'],'the CEF reading itself');
+assert.deepEqual(mixedRead(['rfc5424_cef','rfc5424_cef'],[{body:cefRecord},{body:cefOther}],'body.dst'),['HIGH'],'a CEF family of a mixed reading');
+assert.deepEqual(mixedRead(['rfc3164_leef','rfc3164_leef'],[{body:{leef_version:'2.0',src:'192.0.2.1',dstPort:'443',proto:'6'}},{body:{leef_version:'2.0',usrName:'a'}}],'body.dstPort'),['HIGH'],'a LEEF family of a mixed reading');
+assert.deepEqual(mixedRead(['cef','cef'],[cefRecord,cefOther],'dst'),['HIGH'],'the CEF family of a mixed reading');
+assert.deepEqual(mixedRead(['rfc5424_json','rfc5424_json'],[{body:cefRecord},{body:cefOther}],'body.dst'),['REVIEW'],'a JSON family of a mixed reading');
+assert.deepEqual(mixedRead(['rfc5424_kv','rfc5424_kv'],[{body:cefRecord},{body:cefOther}],'body.dst'),['REVIEW'],'a key=value family of a mixed reading');
+assert.deepEqual(mixedRead(['xcef','xcef'],[cefRecord,cefOther],'dst'),['REVIEW'],'a family name that only ends in cef');
 assert.deepEqual(read('leef',[{leef_version:'2.0',src:'192.0.2.1',dstPort:'443',proto:'6'},{leef_version:'2.0',usrName:'a'}],'dstPort'),['HIGH'],'LEEF dstPort');
 assert.deepEqual(read('kv',[cefRecord,cefOther],'dst'),['REVIEW'],'the same names in a key=value log');
 const {cef_version:_v,...bareCef}=cefRecord;
-assert.deepEqual(read('syslog_rfc5424',[{cef_version:'0',body:bareCef},{body:cefOther}],'body.dst'),['REVIEW'],'the version beside the body is not the version of the body');
+assert.deepEqual(readBody('syslog_rfc5424',['cef','cef'],[{cef_version:'0',body:bareCef},{body:cefOther}],'body.dst'),['REVIEW'],'the version beside the body is not the version of the body');
 assert.deepEqual(read('cef',[bareCef,cefOther],'dst'),['REVIEW'],'no CEF version in the record of the key');
 assert.deepEqual(read('cef',[bareCef,cefRecord,cefOther],'dst'),['REVIEW'],'one record of the key without CEF version');
 assert.deepEqual(read('cef',[{...cefRecord,dst:'db01.example.com'},cefOther],'dst'),['REVIEW'],'a CEF dst that is not an address');
