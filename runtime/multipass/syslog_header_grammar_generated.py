@@ -3,7 +3,7 @@
 #   node scripts/grammar/generate-grammar.mjs --write
 # CI runs the generator with --verify, so a hand edit of this file fails the gate.
 # Syslog header grammar for the Multi-Pass engine, generated from the shared grammar contract.
-GRAMMAR_CONTRACT_SHA256 = "1f5a17568901796d5ad9da33a38abf81f1b2ab252024a0640a370a89fc78b574"
+GRAMMAR_CONTRACT_SHA256 = "34709336df4d8170d579307487c2ca7a844aea4a912b0513b16d3db9aea66b32"
 TOKENS = {
   "PRI": "[0-9]{1,3}",
   "BSD_MONTH": "[A-Z][a-z]{2}",
@@ -132,7 +132,7 @@ FRAGMENTS = {
     ]
   },
   "structured_family_claim": {
-    "source": "(?P<family>(?:CEF|LEEF)):(?:[0-9])",
+    "source": "(?P<family>(?:CEF|LEEF)):(?:[ ])?(?:[0-9])",
     "captures": [
       "family"
     ]

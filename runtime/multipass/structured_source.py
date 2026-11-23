@@ -217,7 +217,8 @@ def decode_cef_or_leef(raw:str,offset:int=0)->Fragment:
     """Parse only on exact CEF:/LEEF: prefix. Never substring-fallback."""
     out=Fragment()
     if raw.startswith("CEF:",offset):
-        start=offset+4
+        # One space after the colon is the FortiGate form "CEF: 0|" (shared CEF grammar).
+        start=offset+(5 if raw.startswith("CEF: ",offset) else 4)
         names=("version","vendor","product","device_version","signature_id",
                "name","severity")
         try:

@@ -155,8 +155,12 @@ function headerFieldAt(text: string, from: number): HeaderField | null {
 /** The position after the header when the header fields spell it (`<prefix><version>|field|field|...|`), or -1. */
 function headerEnd(text: string, prefix: string, names: readonly string[], fields: Record<string, unknown>): number {
   const version = fields[names[0]!];
-  if (typeof version !== 'string' || !text.startsWith(prefix + version + '|')) return -1;
-  let cursor = prefix.length + version.length + 1;
+  if (typeof version !== 'string') return -1;
+  // A CEF header may have one space after "CEF:" (the FortiGate form, see structuredFamilies.ts).
+  const lead = text.startsWith(prefix + version + '|') ? prefix :
+    prefix === 'CEF:' && text.startsWith(prefix + ' ' + version + '|') ? prefix + ' ' : null;
+  if (lead === null) return -1;
+  let cursor = lead.length + version.length + 1;
   for (let index = 1; index < names.length; index++) {
     const field = headerFieldAt(text, cursor);
     if (field === null || fields[names[index]!] !== field.value) return -1;

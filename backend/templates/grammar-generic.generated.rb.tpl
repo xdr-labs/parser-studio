@@ -1568,7 +1568,7 @@ end
 # src/genericStructural.ts: shortRfc5424Structured
 def psg_short_rfc5424_structured(raw)
   match = pri = source = parsed = nil
-  match = (/\A<([0-9]{1,3})>(1) ([^ \t\n\r\f\x0b]{1,64}) ([!-~]{1,255}) ((?:CEF:0\|(?m:.)*|LEEF:(?:1\.0|2\.0)\|(?m:.)*))\z/.match(raw) || :psg_null)
+  match = (/\A<([0-9]{1,3})>(1) ([^ \t\n\r\f\x0b]{1,64}) ([!-~]{1,255}) ((?:CEF: ?0\|(?m:.)*|LEEF:(?:1\.0|2\.0)\|(?m:.)*))\z/.match(raw) || :psg_null)
   if !psg_t(match)
     return :psg_null
   end
@@ -1766,7 +1766,7 @@ end
 # src/genericStructural.ts: structuredFamilyClaim
 def psg_structured_family_claim(raw)
   match = nil
-  match = psg_match_at(/\G(?:(?<family>(?:CEF|LEEF)):(?:[0-9]))/, raw, 0)
+  match = psg_match_at(/\G(?:(?<family>(?:CEF|LEEF)):(?:[ ])?(?:[0-9]))/, raw, 0)
   return (psg_t(match) ? psg_group(match, 'family') : :psg_null)
 end
 
@@ -1809,7 +1809,7 @@ def psg_syslog_envelope_structured_fallback(raw)
     return :psg_null
   end
   if message.start_with?('CEF:')
-    if !/\ACEF:0\|/.match?(message)
+    if !/\ACEF: ?0\|/.match?(message)
       return :psg_null
     end
     parsed_2 = psg_extract_structured_family(message, 'cef')

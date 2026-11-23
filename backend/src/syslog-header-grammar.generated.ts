@@ -2,7 +2,7 @@
 // Source: contracts/syslog-header-grammar.v1.json (revision 9); regenerate with
 //   node scripts/grammar/generate-grammar.mjs --write
 // CI runs the generator with --verify, so a hand edit of this file fails the gate.
-export const GRAMMAR_CONTRACT_SHA256 = "1f5a17568901796d5ad9da33a38abf81f1b2ab252024a0640a370a89fc78b574";
+export const GRAMMAR_CONTRACT_SHA256 = "34709336df4d8170d579307487c2ca7a844aea4a912b0513b16d3db9aea66b32";
 /** Template placeholder -> Ruby source text (Ruby 2.4 compatible). */
 export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = {
   "__PS_GRAMMAR_RX_RFC3164_TAGGED__": "\\A(?:<(?<pri>[0-9]{1,3})>)?(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\\[(?<procid>[0-9]{1,8})\\])?:[ ]+(?<message>[^\\r\\n]+)\\z",
@@ -13,7 +13,7 @@ export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = {
   "__PS_GRAMMAR_FRAGMENT_KV_LIST_PAIR__": "\\G(?:[ \\t]*)(?<key>[A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:\"(?<dq>[^\"]*)\"|'(?<sq>[^']*)'|(?<bare>[^ \\t\\n\\r\\f\\v\\x1c-\\x1f\"',;|=]+))",
   "__PS_GRAMMAR_FRAGMENT_KV_LIST_SEPARATOR__": "\\G(?<delimiter>[,;|])",
   "__PS_GRAMMAR_FRAGMENT_RFC5424_VERSION_HEAD__": "\\G<(?<pri>[0-9]{1,3})>(?<version>[1-9][0-9]{0,2})[ ](?:-[ ]|(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T))",
-  "__PS_GRAMMAR_FRAGMENT_STRUCTURED_FAMILY_CLAIM__": "\\G(?<family>(?:CEF|LEEF)):(?:[0-9])",
+  "__PS_GRAMMAR_FRAGMENT_STRUCTURED_FAMILY_CLAIM__": "\\G(?<family>(?:CEF|LEEF)):(?:[ ])?(?:[0-9])",
   "__PS_GRAMMAR_FRAGMENT_CEF_PAIR__": "\\G(?:(?:[ \\t]))*(?<key>[A-Za-z_][A-Za-z0-9_.-]{0,127})=(?<value>(?:(?:(?:\\\\[^ \\t])|(?:[^\\\\ \\t])|(?:[ \\t]+)(?=(?:[^ \\t]))(?!(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=)|(?:[ \\t]+)(?=(?:[ \\t])(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=)|(?:\\\\)(?=(?:[ \\t]))))*)(?:(?:(?:[ \\t]))*\\z|(?:[ \\t])(?=(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=))",
   "__PS_GRAMMAR_FRAGMENT_LEEF_DELIMITER__": "\\G(?:(?<literal>[\\t!-<>-\\[\\]-~])|(?:0x|x)(?<hex>[0-9A-Fa-f]{1,4}))\\z",
   "__PS_GRAMMAR_FRAGMENT_LEEF_ATTRIBUTE__": "\\G(?<key>[A-Za-z_][A-Za-z0-9_.-]*)=",

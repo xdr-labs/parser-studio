@@ -2,7 +2,7 @@
 // Source: contracts/syslog-header-grammar.v1.json (revision 9); regenerate with
 //   node scripts/grammar/generate-grammar.mjs --write
 // CI runs the generator with --verify, so a hand edit of this file fails the gate.
-export const GRAMMAR_CONTRACT_SHA256 = "1f5a17568901796d5ad9da33a38abf81f1b2ab252024a0640a370a89fc78b574";
+export const GRAMMAR_CONTRACT_SHA256 = "34709336df4d8170d579307487c2ca7a844aea4a912b0513b16d3db9aea66b32";
 export const GRAMMAR_CONTRACT_REVISION = 9;
 export interface CompiledHeaderRule { readonly source: string; readonly captures: readonly string[] }
 export const SYSLOG_HEADER_RULES = {
@@ -94,7 +94,7 @@ export const GRAMMAR_FRAGMENTS = {
     ]
   },
   "structured_family_claim": {
-    "source": "(?<family>(?:CEF|LEEF)):(?:[0-9])",
+    "source": "(?<family>(?:CEF|LEEF)):(?:[ ])?(?:[0-9])",
     "captures": [
       "family"
     ]

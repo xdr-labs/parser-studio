@@ -646,7 +646,7 @@
       ]
     },
     "structured_family_claim": {
-      "description": "CEF: or LEEF: followed by a digit at the start of a line: the line claims to be a CEF or LEEF event. The Python preview uses it to keep such a line away from its permissive generic fallback. The browser and Ruby Generic Structural routes do not use it yet (policy divergence D-2 in contracts/semantic-goldens.v1.json).",
+      "description": "CEF: or LEEF:, at most one space (the FortiGate \"CEF: 0|\" form), then a digit at the start of a line: the line claims to be a CEF or LEEF event. The Python preview uses it to keep such a line away from its permissive generic fallback. The browser and Ruby Generic Structural routes do not use it yet (policy divergence D-2 in contracts/semantic-goldens.v1.json).",
       "sequence": [
         {
           "token": "FAMILY_NAME",
@@ -654,6 +654,13 @@
         },
         {
           "lit": ":"
+        },
+        {
+          "optional": [
+            {
+              "sp": "1"
+            }
+          ]
         },
         {
           "token": "ASCII_DIGIT"

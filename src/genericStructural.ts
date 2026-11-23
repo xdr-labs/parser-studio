@@ -102,7 +102,7 @@ function prefixedJson(raw:string):Record<string,unknown>|null{
   },'json',match[2]!);
 }
 
-const RX_SHORT_RFC5424_STRUCTURED=new RegExp(String.raw`^<(${T.PRI})>(${RFC5424_VERSION}) ([^ \t\n\r\f\v]{1,64}) (${T.RFC5424_HOSTNAME}) ((?:CEF:0\|.*|LEEF:(?:1\.0|2\.0)\|.*))$`,'su');
+const RX_SHORT_RFC5424_STRUCTURED=new RegExp(String.raw`^<(${T.PRI})>(${RFC5424_VERSION}) ([^ \t\n\r\f\v]{1,64}) (${T.RFC5424_HOSTNAME}) ((?:CEF: ?0\|.*|LEEF:(?:1\.0|2\.0)\|.*))$`,'su');
 function shortRfc5424Structured(raw:string):Record<string,unknown>|null{
   const match=raw.match(RX_SHORT_RFC5424_STRUCTURED);
   if(!match)return null;
@@ -1044,7 +1044,7 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
   if(/\bfirewall(?:\[\d{1,8}\])?: +msg_id=/u.test(message))return null;
 
   if(message.startsWith('CEF:')){
-    if(!/^CEF:0\|/u.test(message))return null;
+    if(!/^CEF: ?0\|/u.test(message))return null;
     const parsed=extractStructuredFamily(message,'cef');
     if(parsed.errors.length)return null;
     return withBodyText({

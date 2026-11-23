@@ -24,9 +24,10 @@ CEF_VERSIONS=tuple(SEMANTICS['cefSupportedVersions'])
 
 
 def _direct(raw:str)->SourceEvent|None:
-    if not raw.startswith(tuple('CEF:'+version+'|' for version in CEF_VERSIONS)):return None
+    # One space after the colon is the FortiGate form "CEF: 0|" (shared CEF grammar).
+    if not raw.startswith(tuple(lead+version+'|' for lead in ('CEF:','CEF: ') for version in CEF_VERSIONS)):return None
     result=SourceEvent(raw,syntax='CEF_STANDARD')
-    try:parts,start=_pipe_parts(raw,4,len(HEADER_NAMES))
+    try:parts,start=_pipe_parts(raw,5 if raw.startswith('CEF: ') else 4,len(HEADER_NAMES))
     except ValueError as exc:
         result.issues.append(str(exc));return _close(result)
     if parts[0][0] not in CEF_VERSIONS:

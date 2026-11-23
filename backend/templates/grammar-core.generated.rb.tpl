@@ -658,7 +658,7 @@ def psg_extract_structured_family(input, v_format, bodyFormat = nil, regexPatter
     return result
   end
   if (v_format == 'cef')
-    match = (/\ACEF:([0-9]+)\|((?m:.)*)\z/.match(input) || :psg_null)
+    match = (/\ACEF: ?([0-9]+)\|((?m:.)*)\z/.match(input) || :psg_null)
     if (!psg_t(match) || !psg_k_cef_versions.include?(match[1]))
       return psg_failure_2('Only standalone CEF version zero events are supported')
     end
@@ -847,12 +847,16 @@ end
 
 # src/grammar/lossGuard.ts: headerEnd
 def psg_header_end(text, prefix, names, fields)
-  version = cursor = index = field = nil
+  version = lead = cursor = index = field = nil
   version = fields[names[0]]
-  if (!version.is_a?(String) || !text.start_with?(((prefix + version) + '|')))
+  if !version.is_a?(String)
     return (-1)
   end
-  cursor = ((psg_len(prefix) + psg_len(version)) + 1)
+  lead = (text.start_with?(((prefix + version) + '|')) ? prefix : (((prefix == 'CEF:') && text.start_with?((((prefix + ' ') + version) + '|'))) ? (prefix + ' ') : :psg_null))
+  if lead.equal?(:psg_null)
+    return (-1)
+  end
+  cursor = ((psg_len(lead) + psg_len(version)) + 1)
   index = 1
   while (index < names.length)
     field = psg_header_field_at(text, cursor)

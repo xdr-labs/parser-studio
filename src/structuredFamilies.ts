@@ -33,7 +33,8 @@ const withBodyKind = <T extends StructuredExtraction>(extraction: T, kind: strin
 export const bodyKindOf = (extraction: StructuredExtraction): string | undefined => getTag(extraction, 'bodyKind') as string | undefined;
 
 export function detectStructuredFamily(input: string): StructuredFamily | null {
-  if (/^CEF:\d+\|/u.test(input)) return 'cef';
+  // One space after the colon is the form Fortinet documents for FortiGate ("CEF: 0|"); nothing else is CEF.
+  if (/^CEF: ?\d+\|/u.test(input)) return 'cef';
   if (/^LEEF:(?:1\.0|2\.0)\|/u.test(input)) return 'leef';
   // An RFC 5424 shaped header is labelled RFC 5424 only for a VERSION the contract supports.
   const ietf = /^<\d{1,3}>([1-9]\d?) [^ \t\n\r\f\v]+ [^ \t\n\r\f\v]+ [^ \t\n\r\f\v]+ /u.exec(input);
@@ -254,7 +255,9 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   }
   if (format === 'cef') {
     // dotAll: a value may hold U+2028/U+2029, which '.' alone excludes in ECMAScript but not in Ruby or Python.
-    const match = /^CEF:(\d+)\|(.*)$/su.exec(input);
+    // "CEF: 0|" (one space after the colon) is the FortiGate form (Fortinet Log Message Reference); the version
+    // itself has no space.
+    const match = /^CEF: ?(\d+)\|(.*)$/su.exec(input);
     if (!match || !CEF_VERSIONS.includes(match[1]!)) return failure('Only standalone CEF version zero events are supported');
     const parts = splitEscaped(match[2], '|', 6);
     if (!parts) return failure('CEF requires six header fields and an extension slot');

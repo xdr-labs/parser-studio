@@ -53,7 +53,8 @@ describe('an RFC 3164 record with a TAG and without a PRI',()=>{
   it.each([
     'Nov 21 10:00:03 fw1 sshd[4242]: Accepted password for bob from 10.0.0.5 port 51234 ssh2',
     'Nov 21 10:00:03 the service restarted: see the log',
-    'Dec 27 11:07:55 FGT-A-LOG CEF: 0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|src=10.1.100.11',
+    // 'Dec 27 11:07:55 FGT-A-LOG CEF: 0|...' has a structured body since the FortiGate "CEF: 0|" form is CEF
+    // (src/grammar/fortinetCefSpace20261124.test.ts).
   ])('does not take a line without a structured body for a tagged Syslog record: %s',line=>{
     const header=matchRfc3164Header(line);
     expect(header.ok&&header.rule==='rfc3164_tagged').toBe(false);
