@@ -175,11 +175,24 @@ describe('audit F1 and F3: family records and shared mappings',()=>{
     expect(mergeFamilyCandidate(draft,'structured_family_cef',cef,preview(SAMPLE,draft)))
       .toEqual({ok:false,reason:'NO_FAMILY_CHANGE'});
   });
-  it('treats a changed source path kind as a change (re-audit A3)',()=>{
+  it('accepts a result that restates a shared mapping with the nested path kind it already reads (re-audit 2 F2)',()=>{
+    const base=routed();
+    const draft:ParserDraft={...base,mappings:[{id:'shared-1',source:'generic.mode',target:'parser_mode',type:'string'}],
+      guided:{...base.guided!,groups:{...base.guided!.groups,'shared-1':'vendor_fields'}}};
+    const cef=projectFamilyDraft(draft,'structured_family_cef')!;
+    const candidate={...cef,mappings:cef.mappings.map(rule=>rule.id==='shared-1'?{...rule,sourcePathKind:'nested' as const}:
+      rule.source==='body.cef_name'?{...rule,target:'event_name'}:rule),
+      guided:{...cef.guided!,groups:{...cef.guided!.groups,...Object.fromEntries(cef.mappings
+        .filter(rule=>rule.source==='body.cef_name').map(rule=>[rule.id,'top_fields' as const]))}}};
+    const merged=mergeFamilyCandidate(draft,'structured_family_cef',candidate,preview(SAMPLE,draft));
+    expect(merged.ok,JSON.stringify(merged)).toBe(true);
+  });
+  it('reads a literal-key mapping as written when it checks the records of the family (re-audit 2 F3)',()=>{
     const draft=routed();
     const cef=projectFamilyDraft(draft,'structured_family_cef')!;
-    const changed={...cef,mappings:cef.mappings.map((rule,i)=>i===cef.mappings.length-1?{...rule,sourcePathKind:'literal_root' as const}:rule)};
-    const merged=mergeFamilyCandidate(draft,'structured_family_cef',changed,preview(SAMPLE,draft));
-    expect(merged.ok?'APPLIED':merged.reason).not.toBe('NO_FAMILY_CHANGE');
+    // No record has a literal top-level key "body.cef_name": the literal reading finds nothing.
+    const literal={...cef,mappings:cef.mappings.map(rule=>rule.source==='body.cef_name'?{...rule,sourcePathKind:'literal_root' as const}:rule)};
+    expect(mergeFamilyCandidate(draft,'structured_family_cef',literal,preview(SAMPLE,draft)))
+      .toEqual({ok:false,reason:'SOURCE_NOT_IN_FAMILY'});
   });
 });

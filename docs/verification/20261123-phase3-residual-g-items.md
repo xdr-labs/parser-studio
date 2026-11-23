@@ -15,3 +15,22 @@ lost data, wrong official mapping.
 The G-11 change alters the generated Ruby grammar: template-set digest
 09de3c540f0ef12341773c13764414408a1ea4400674a54d123e177198ee1ac5 -> see the final report (owner approval
 required; KNOWN_TEMPLATES and approval constants unchanged).
+
+## Independent re-audits (separate agents)
+
+- Re-audit of e1af64d..0bd7b58: A1 MAJOR (ECS network.protocol read as the IP protocol; TCP/UDP ports of ECS
+  records fell to review) and A2 MAJOR (G-10 Python limits diverged from the Generic Structural modes) fixed in
+  6b40461; A3 (source path kind ignored by the family merge) fixed in 6b40461.
+- Re-audit of 0bd7b58..6b40461: no BLOCKER. F2 MAJOR, fail-closed: a JSONata reply that restates a shared
+  mapping carries sourcePathKind nested, which the A3 comparison treated as a change, so nothing was applied.
+  A mapping without a kind now equals the same mapping marked nested. F3: the family record check now reads a
+  literal-key mapping as written. F1 (limit): a record whose only protocol statement is network.protocol
+  icmp (no network.transport) gets HIGH ports; correct for ECS, wrong for a vendor that writes the IP
+  protocol there.
+
+## Accuracy at 6b40461 (full validation T22, same corpus as T19/T21)
+
+Holdout 102 correct / 0 wrong / 0 lost; golden canonical 148/182, preserve 176/179: unchanged from the
+baseline. The per-family vendor-name fix maps the CEF tuple of mixed_envelope_cef_kv in the automatic draft
+(unit test), but the browser journey of that golden case does not take that path, so its golden score is
+unchanged (2/8).

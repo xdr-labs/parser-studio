@@ -75,9 +75,11 @@ export function projectFamilyDraft(draft:ParserDraft,name:string):ParserDraft|nu
 }
 
 const groupOf=(draft:ParserDraft,rule:MappingRule):FieldGroup=>draft.guided?.groups[rule.id]??'vendor_fields';
-// The source path kind is part of what a mapping reads (literal key "a.b" vs nested a.b): re-audit A3.
+// The source path kind is part of what a mapping reads (re-audit A3): a literal key differs from the nested
+// path of the same name. A mapping without a kind reads the nested path, so it equals the same mapping marked
+// "nested" (JSONata marks every dotted selector; re-audit 2 F2).
 const keyOf=(draft:ParserDraft,rule:MappingRule)=>JSON.stringify([rule.source,rule.target,rule.type,groupOf(draft,rule),rule.when??null,
-  rule.sourcePathKind??null]);
+  rule.sourcePathKind==='literal_root'?'literal_root':'nested']);
 const outputOf=(draft:ParserDraft,rule:MappingRule)=>(groupOf(draft,rule)==='vendor_fields'?'\u0000vendor.':'')+rule.target;
 const overlaps=(a:string,b:string)=>a===b||a.startsWith(b+'.')||b.startsWith(a+'.');
 
@@ -104,7 +106,8 @@ export function mergeFamilyCandidate(
   const records=(familyScopes(draft,suite)??[]).find(scope=>scope.name===name)?.records??[];
   for(const rule of own)
     if(!records.some(at=>{
-      const found=lookupFieldValue(suite.events[at]!.fields,rule.source);
+      // Read as the mapping reads it: a literal-key mapping finds only the literal key (re-audit 2 F3).
+      const found=lookupFieldValue(suite.events[at]!.fields,rule.source,rule.sourcePathKind);
       return found.found&&found.value!==undefined&&found.value!==null&&typeof found.value!=='object';
     }))return {ok:false,reason:'SOURCE_NOT_IN_FAMILY'};
   // A result that leaves the family as it is is reported, not applied as a change (audit F4).
