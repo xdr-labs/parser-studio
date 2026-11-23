@@ -215,6 +215,33 @@
           "sp": "+"
         },
         {
+          "notFollowedBy": [
+            {
+              "token": "FAMILY_NAME"
+            },
+            {
+              "repeat": [
+                {
+                  "token": "CEF_WS"
+                }
+              ]
+            },
+            {
+              "lit": ":"
+            },
+            {
+              "repeat": [
+                {
+                  "token": "CEF_WS"
+                }
+              ]
+            },
+            {
+              "token": "ASCII_DIGIT"
+            }
+          ]
+        },
+        {
           "token": "TAG",
           "cap": "tag"
         },
@@ -646,19 +673,26 @@
       ]
     },
     "structured_family_claim": {
-      "description": "CEF: or LEEF:, at most one space (the FortiGate \"CEF: 0|\" form), then a digit at the start of a line: the line claims to be a CEF or LEEF event. The Python preview uses it to keep such a line away from its permissive generic fallback. The browser and Ruby Generic Structural routes do not use it yet (policy divergence D-2 in contracts/semantic-goldens.v1.json).",
+      "description": "CEF or LEEF, then a colon with any SP or TAB around it, then a digit, at the start of a line: the line claims to be a CEF or LEEF event and is read by that grammar only, so a malformed one is declined and never read as generic text. Only \"CEF:\" and \"CEF: \" (the FortiGate form) before the version parse as CEF. The RFC 3164 TAG never starts such a claim. The Python preview uses it to keep such a line away from its permissive generic fallback.",
       "sequence": [
         {
           "token": "FAMILY_NAME",
           "cap": "family"
         },
         {
+          "repeat": [
+            {
+              "token": "CEF_WS"
+            }
+          ]
+        },
+        {
           "lit": ":"
         },
         {
-          "optional": [
+          "repeat": [
             {
-              "sp": "1"
+              "token": "CEF_WS"
             }
           ]
         },

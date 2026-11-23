@@ -402,10 +402,12 @@ PARSERSTUDIO_UNMAPPED_COLLISION_ROOT = 'parserstudio_unmapped'
 # never showed - is kept in the vendor namespace at its original path, or under parserstudio_unmapped where that
 # path is a mapped vendor field or a key holds a dot. Strings are kept unchanged; other values as the canonical
 # string mapping renders them. Missing values (nil, ignored, blank) are not written, as for mapped fields.
-def parserstudio_unmapped_walk(value, path, covered, leaves)
-  return if !path.empty? && covered.any? { |prefix| prefix.length <= path.length && path[0, prefix.length] == prefix }
+def parserstudio_unmapped_walk(value, path, covered, names, leaves)
+  # A nested source path also reads a literal key spelled the same ("policy.id").
+  return if !path.empty? && (names.include?(path.join('.')) ||
+    covered.any? { |prefix| prefix.length <= path.length && path[0, prefix.length] == prefix })
   if value.is_a?(Hash) && !value.empty?
-    value.each { |key, child| parserstudio_unmapped_walk(child, path + [key.to_s], covered, leaves) }
+    value.each { |key, child| parserstudio_unmapped_walk(child, path + [key.to_s], covered, names, leaves) }
   elsif !path.empty?
     leaves << [path, value]
   end
@@ -428,7 +430,7 @@ def parserstudio_preserve_unmapped(original, normalized, profile, ignored)
   maps = [@parser_rule_set['normalization']]
   maps << profile if profile
   covered = []
-  occupied = []
+  names = []
   maps.each do |map|
     ['topFields', 'nsFields', 'vendorFields'].each do |section|
       map[section].each do |source, rule|
@@ -437,14 +439,29 @@ def parserstudio_preserve_unmapped(original, normalized, profile, ignored)
         rescue StandardError
           true
         end
-        covered << (rule['source_path_kind'] == 'literal_root' ? [source] : source.split('.', -1)) if applies
-        occupied << rule['normalized_name'] if section == 'vendorFields'
+        next unless applies
+        literal = rule['source_path_kind'] == 'literal_root'
+        covered << (literal ? [source] : source.split('.', -1))
+        names << source unless literal
       end
     end
   end
-  leaves = []
-  parserstudio_unmapped_walk(original, [], covered, leaves)
   namespace = @parser_rule_set['vendor']
+  # Reserved names: the vendor fields of every family (one source keeps one name in every event) and the
+  # enrichment targets inside the vendor namespace.
+  profiles = (@parser_rule_set['normalization']['eventProfiles'] || {})['variants'] || []
+  # A name another family's mapping writes from the same source is that source's name, not a clash.
+  occupied = ([@parser_rule_set['normalization']] + profiles).flat_map do |map|
+    (map['vendorFields'] || {}).map do |source, rule|
+      [rule['normalized_name'], rule['source_path_kind'] == 'literal_root' ? nil : source]
+    end
+  end
+  (@parser_rule_set['enrichment'] || []).each do |rule|
+    target = rule['target']
+    occupied << [target[(namespace.length + 1)..-1], nil] if target.is_a?(String) && target.start_with?(namespace + '.')
+  end
+  leaves = []
+  parserstudio_unmapped_walk(original, [], covered, names, leaves)
   first_failed = nil
   leaves.each do |path, value|
     next if value.nil? || (value.is_a?(String) && (ignored.include?(value) || parserstudio_trim_ascii(value).empty?))
@@ -454,7 +471,10 @@ def parserstudio_preserve_unmapped(original, normalized, profile, ignored)
       raise ArgumentError, 'Vendor namespace collision' unless normalized[namespace].is_a?(Hash)
       name = path.join('.')
       clash = path.any? { |segment| segment.include?('.') } || path.first == PARSERSTUDIO_UNMAPPED_COLLISION_ROOT ||
-        occupied.any? { |taken| taken == name || taken.start_with?(name + '.') || name.start_with?(taken + '.') }
+        occupied.any? do |taken, source|
+          !(taken == name && source == name) &&
+            (taken == name || taken.start_with?(name + '.') || name.start_with?(taken + '.'))
+        end
       target = clash ? [PARSERSTUDIO_UNMAPPED_COLLISION_ROOT] + path : path
       raise ArgumentError, 'Unmapped output collision' unless parserstudio_assign_segments(normalized[namespace], target, text)
     rescue StandardError

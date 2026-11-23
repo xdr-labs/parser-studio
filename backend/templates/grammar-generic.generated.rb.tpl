@@ -1766,7 +1766,7 @@ end
 # src/genericStructural.ts: structuredFamilyClaim
 def psg_structured_family_claim(raw)
   match = nil
-  match = psg_match_at(/\G(?:(?<family>(?:CEF|LEEF)):(?:[ ])?(?:[0-9]))/, raw, 0)
+  match = psg_match_at(/\G(?:(?<family>(?:CEF|LEEF))(?:(?:[ \t]))*:(?:(?:[ \t]))*(?:[0-9]))/, raw, 0)
   return (psg_t(match) ? psg_group(match, 'family') : :psg_null)
 end
 

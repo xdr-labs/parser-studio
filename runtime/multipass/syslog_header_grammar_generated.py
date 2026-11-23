@@ -3,7 +3,7 @@
 #   node scripts/grammar/generate-grammar.mjs --write
 # CI runs the generator with --verify, so a hand edit of this file fails the gate.
 # Syslog header grammar for the Multi-Pass engine, generated from the shared grammar contract.
-GRAMMAR_CONTRACT_SHA256 = "34709336df4d8170d579307487c2ca7a844aea4a912b0513b16d3db9aea66b32"
+GRAMMAR_CONTRACT_SHA256 = "98f8143baac18f5855ad5993834f3b6afebd3ee0d51a99ebc841b92916d4292e"
 TOKENS = {
   "PRI": "[0-9]{1,3}",
   "BSD_MONTH": "[A-Z][a-z]{2}",
@@ -46,7 +46,7 @@ TOKENS = {
 }
 RULES = {
   "rfc3164_tagged": {
-    "source": "\\A(?:<(?P<pri>[0-9]{1,3})>)?(?P<month>[A-Z][a-z]{2})[ ]+(?P<day>[0-9]{1,2})[ ]+(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})[ ]+(?P<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?P<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\\[(?P<procid>[0-9]{1,8})\\])?:[ ]+(?P<message>[^\\r\\n]+)\\Z",
+    "source": "\\A(?:<(?P<pri>[0-9]{1,3})>)?(?P<month>[A-Z][a-z]{2})[ ]+(?P<day>[0-9]{1,2})[ ]+(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})[ ]+(?P<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?!(?:(?:CEF|LEEF))(?:(?:[ \\t]))*:(?:(?:[ \\t]))*(?:[0-9]))(?P<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\\[(?P<procid>[0-9]{1,8})\\])?:[ ]+(?P<message>[^\\r\\n]+)\\Z",
     "captures": [
       "pri",
       "month",
@@ -132,7 +132,7 @@ FRAGMENTS = {
     ]
   },
   "structured_family_claim": {
-    "source": "(?P<family>(?:CEF|LEEF)):(?:[ ])?(?:[0-9])",
+    "source": "(?P<family>(?:CEF|LEEF))(?:(?:[ \\t]))*:(?:(?:[ \\t]))*(?:[0-9])",
     "captures": [
       "family"
     ]

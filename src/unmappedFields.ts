@@ -27,9 +27,12 @@ const plainObject=(value:unknown):value is Record<string,unknown>=>
  * arrays, empty objects and scalars are leaves. */
 export function unmappedLeaves(fields:Record<string,unknown>,covered:readonly CoveredSource[]):UnmappedLeaf[]{
   const prefixes=covered.map(item=>item.literal?[item.source]:item.source.split('.'));
+  // A nested source path also reads a literal key spelled the same ("policy.id"), as lookupFieldValue does.
+  const names=new Set(covered.filter(item=>!item.literal).map(item=>item.source));
   const leaves:UnmappedLeaf[]=[];
   const walk=(value:unknown,path:string[])=>{
-    if(path.length&&prefixes.some(prefix=>prefix.length<=path.length&&prefix.every((part,i)=>part===path[i])))return;
+    if(path.length&&(names.has(path.join('.'))||
+      prefixes.some(prefix=>prefix.length<=path.length&&prefix.every((part,i)=>part===path[i]))))return;
     if(plainObject(value)&&Object.keys(value).length>0){
       for(const key of Object.keys(value))walk(value[key],[...path,key]);
       return;
@@ -48,11 +51,15 @@ export function unmappedText(value:unknown):string|undefined|Error{
   return converted.error?new Error(converted.error):String(converted.value);
 }
 
-/** Where an unmapped leaf is written inside the vendor namespace. */
-export function unmappedOutputPath(path:readonly string[],occupied:readonly string[]):string[]{
+/** A vendor output name a mapping (source) or an enrichment (no source) writes. */
+export interface ReservedName{target:string;source?:string}
+/** Where an unmapped leaf is written inside the vendor namespace. A name another family's mapping writes from the
+ * same source is that source's name, not a clash: the field keeps one name in every event. */
+export function unmappedOutputPath(path:readonly string[],occupied:readonly ReservedName[]):string[]{
   const name=path.join('.');
   const clash=path.some(part=>part.includes('.'))||path[0]===UNMAPPED_COLLISION_ROOT||
-    occupied.some(taken=>taken===name||taken.startsWith(name+'.')||name.startsWith(taken+'.'));
+    occupied.some(({target,source})=>!(target===name&&source===name)&&
+      (target===name||target.startsWith(name+'.')||name.startsWith(target+'.')));
   return clash?[UNMAPPED_COLLISION_ROOT,...path]:[...path];
 }
 

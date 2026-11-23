@@ -2,12 +2,12 @@
 // Source: contracts/syslog-header-grammar.v1.json (revision 9); regenerate with
 //   node scripts/grammar/generate-grammar.mjs --write
 // CI runs the generator with --verify, so a hand edit of this file fails the gate.
-export const GRAMMAR_CONTRACT_SHA256 = "34709336df4d8170d579307487c2ca7a844aea4a912b0513b16d3db9aea66b32";
+export const GRAMMAR_CONTRACT_SHA256 = "98f8143baac18f5855ad5993834f3b6afebd3ee0d51a99ebc841b92916d4292e";
 export const GRAMMAR_CONTRACT_REVISION = 9;
 export interface CompiledHeaderRule { readonly source: string; readonly captures: readonly string[] }
 export const SYSLOG_HEADER_RULES = {
   "rfc3164_tagged": {
-    "source": "^(?:<(?<pri>[0-9]{1,3})>)?(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\\[(?<procid>[0-9]{1,8})\\])?:[ ]+(?<message>[^\\r\\n]+)$",
+    "source": "^(?:<(?<pri>[0-9]{1,3})>)?(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?!(?:(?:CEF|LEEF))(?:(?:[ \\t]))*:(?:(?:[ \\t]))*(?:[0-9]))(?<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\\[(?<procid>[0-9]{1,8})\\])?:[ ]+(?<message>[^\\r\\n]+)$",
     "captures": [
       "pri",
       "month",
@@ -94,7 +94,7 @@ export const GRAMMAR_FRAGMENTS = {
     ]
   },
   "structured_family_claim": {
-    "source": "(?<family>(?:CEF|LEEF)):(?:[ ])?(?:[0-9])",
+    "source": "(?<family>(?:CEF|LEEF))(?:(?:[ \\t]))*:(?:(?:[ \\t]))*(?:[0-9])",
     "captures": [
       "family"
     ]

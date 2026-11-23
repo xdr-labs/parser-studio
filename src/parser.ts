@@ -372,9 +372,14 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     const active=[...draft.mappings,...(family.profile?.mappings??[])];
     const covered=active.filter(rule=>mappingWhenApplies(fields,rule.when))
       .map(rule=>({source:rule.source.trim(),literal:rule.sourcePathKind==='literal_root'}));
-    const occupied=active.filter(rule=>(draft.guided?.groups[rule.id]??'vendor_fields')==='vendor_fields')
-      .map(rule=>rule.target.trim());
     const vendor=draft.vendor.trim()||'vendor';
+    // Reserved names: the vendor fields of every family, so that one source keeps one name in every event (audit
+    // A-5), and the enrichment targets inside the vendor namespace, which an unmapped field must not take (A-1).
+    const occupied=[...draft.mappings,...(draft.eventProfiles?.variants.flatMap(variant=>variant.mappings)??[])]
+      .filter(rule=>(draft.guided?.groups[rule.id]??'vendor_fields')==='vendor_fields')
+      .map(rule=>({target:rule.target.trim(),source:rule.sourcePathKind==='literal_root'?undefined:rule.source.trim()}))
+      .concat((draft.guided?.enrichment??[]).map(rule=>String((rule as {target?:unknown}).target??''))
+        .filter(target=>target.startsWith(vendor+'.')).map(target=>({target:target.slice(vendor.length+1)})));
     for(const leaf of unmappedLeaves(fields,covered)){
       const field=leaf.path.join('.');
       const text=unmappedText(leaf.value);
