@@ -2,6 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {createDraft} from '../model';
 import {preview} from '../parser';
 import {extractGenericStructural} from '../genericStructural';
+import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import type {BackendCapabilities} from './backendCapabilities';
@@ -76,6 +77,18 @@ describe('F1: the family-scoped ChatGPT path keeps the carried sources of a fami
     const events=preview(S5424+' user=alice',merged.draft).events;
     expect(events[0]!.parseStatus).toBe('FULL');
     expect(text(events[0]!.normalized)).toContain('"alice"');
+  });
+});
+
+describe('F1: a source is carried only into a family whose reading can hold it',()=>{
+  // Golden-like PAN-OS TRAFFIC CSV and CEF records (familyRoutedMappings20261123): a PAN-OS record never has the
+  // body.* container of a CEF record, nor a CEF record the generic.fields.* of a PAN-OS record.
+  const PAN='<14>Oct 15 00:03:21 PA-FW01 1,2026/10/15 00:03:21,012345678901,TRAFFIC,end,2561,2026/10/15 00:03:20,10.10.20.15,8.8.8.8,203.0.113.10,8.8.8.8,allow-web,,,ssl,vsys1,trust,untrust,ethernet1/1,ethernet1/2,forward-all,2026/10/15 00:03:21,123456,1,51514,443,62001,443,0x400053,tcp,allow,1840,1200,640,12,2026/10/15 00:03:01,20,any,0,987654321,0x0,10.0.0.0-10.255.255.255,United States,0,7,5,aged-out,0,0,0,0,vsys1,PA-FW01,from-policy';
+  const CEF='CEF:0|Vendor|Product|1.0|100|Login|5|src=10.0.0.7 dst=10.0.0.8 spt=51234 dpt=443 act=allow';
+  it('carries nothing between a PAN-OS CSV family and a CEF family',()=>{
+    const built=buildAutomaticGenericStructuralDraft([PAN,CEF].join('\n'),createDraft())!;
+    for(const variant of built.draft.eventProfiles!.variants)
+      expect(variant.mappings.filter(isCarriedFamilyMapping).map(rule=>rule.source)).toEqual([]);
   });
 });
 

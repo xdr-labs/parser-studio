@@ -156,6 +156,7 @@ const GENERIC_MODE_FAMILIES:EventFamilyRouting={discriminator:'generic.mode',fam
   return mode.found&&typeof mode.value==='string'?mode.value:undefined;
 }};
 const FAMILY_NAME=/^[a-z][a-z0-9_-]{0,31}$/u;
+const containerOf=(path:string)=>{const at=path.lastIndexOf('.');return at<0?'':path.slice(0,at);};
 type Decision={target:string;type:MappingRule['type'];group:FieldGroup};
 
 function officialValues(suite:SuiteResult,vendor:string):number{
@@ -183,9 +184,12 @@ export function familyRoutedDraft(
   const names=[...families.keys()].sort();
   const vendorMappings=new Map(candidate.mappings.map(mapping=>[mapping.source,mapping]));
   const decisions=new Map<string,Map<string,Decision|null>>();
+  // The containers each family's reading produces (the parent path of every leaf; '' for the root).
+  const containers=new Map<string,Set<string>>();
   for(const name of names){
     const events=families.get(name)!.map(index=>suite.events[index]!);
     const present=new Set(events.flatMap(event=>listSafeLeafPaths(event.fields)));
+    containers.set(name,new Set([...present].map(containerOf)));
     const decided=new Map<string,Decision|null>();
     for(const mapping of candidate.mappings)if(present.has(mapping.source))decided.set(mapping.source,null);
     // Only the mappings of this family are its taken destinations: the vendor name another family keeps
@@ -222,8 +226,12 @@ export function familyRoutedDraft(
       // Every family keeps every source that a family mapping names, as a vendor field where its own records did
       // not decide an official one: an event of this family may carry a key the sample showed only in another
       // family, and a mixed parser emits mapped sources only (independent audit 2026-11-23, F1: user=alice and a
-      // second srcip were dropped from FULL events). A source the records of this family do not have is carried.
+      // second srcip were dropped from FULL events). A source the records of this family do not have is carried,
+      // where an event of the family can hold it: its container is one the family's reading produces (the RFC
+      // 3164 and RFC 5424 key=value bodies share body.*; a PAN-OS CSV record never has the body.* of a CEF record).
       if(!local.has(mapping.source))continue;
+      if(!decided.has(mapping.source)&&!containers.get(name)!.has(
+        mapping.sourcePathKind==='literal_root'?'':containerOf(mapping.source)))continue;
       const id=decided.has(mapping.source)?'family-'+String(index)+'-'+String(n++):carriedFamilyMappingId(index,n++);
       const [rule,group]=apply(mapping,decided.get(mapping.source)??null,id);
       mappings.push(rule);groups[rule.id]=group;
