@@ -12,6 +12,7 @@ import type { EventBoundary } from './guided/contract';
 import {inspectDeclaredForwarders} from './guided/declaredForwarder';
 import {inspectEventProfile} from './guided/multiEventRouting';
 import {canonicalCaseTransform,canonicalIgnoreSourceValue} from '../backend/src/canonical-operator-contract';
+import {assignUnmapped,unmappedLeaves,unmappedOutputPath,unmappedText} from './unmappedFields';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -364,6 +365,29 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     }
     if(!assignNormalizedPath(container,target,converted.value)){
       error('normalize','INVALID_MAPPING','Could not assign output field: '+target,target);
+    }
+  }
+  // Owner decision Q3-1: a field no mapping reads is kept in the vendor namespace (src/unmappedFields.ts).
+  if(draft.preserveUnmapped===true&&draft.format!=='generic_structural'&&matched){
+    const active=[...draft.mappings,...(family.profile?.mappings??[])];
+    const covered=active.filter(rule=>mappingWhenApplies(fields,rule.when))
+      .map(rule=>({source:rule.source.trim(),literal:rule.sourcePathKind==='literal_root'}));
+    const occupied=active.filter(rule=>(draft.guided?.groups[rule.id]??'vendor_fields')==='vendor_fields')
+      .map(rule=>rule.target.trim());
+    const vendor=draft.vendor.trim()||'vendor';
+    for(const leaf of unmappedLeaves(fields,covered)){
+      const field=leaf.path.join('.');
+      const text=unmappedText(leaf.value);
+      if(text===undefined)continue;
+      if(text instanceof Error){error('normalize','TYPE_ERROR',field+': '+text.message,field);continue;}
+      const existing=Object.prototype.hasOwnProperty.call(normalized,vendor)?normalized[vendor]:undefined;
+      if(RUNTIME_OUTPUT_ROOTS.has(vendor)||(existing!==undefined&&(!existing||typeof existing!=='object'||Array.isArray(existing)))){
+        error('normalize','TARGET_COLLISION','Vendor namespace collides with an existing output: '+vendor,field);
+        break;
+      }
+      if(existing===undefined)ownSet(normalized,vendor,{});
+      if(!assignUnmapped(normalized[vendor] as Record<string,unknown>,unmappedOutputPath(leaf.path,occupied),text))
+        error('normalize','TARGET_COLLISION','An unmapped source field could not be kept without overwriting another: '+field,field);
     }
   }
   // Native Ruby checks typed protocol-pair semantics at normalization exit.

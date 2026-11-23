@@ -193,7 +193,9 @@ export function prepareAutoParserDraft(
   if(!validManufacturerNamespace(next.vendor.trim()))return failed('MANUFACTURER_UNSUPPORTED');
   const mapped=toBackendProject(next);
   if(!mapped.ok)return failed('MODEL_REVIEW_REQUIRED');
-  return {ok:true,draft:next,sourceFieldCount:allFields.size,
+  // Owner decision Q3-1: a parser made by the Auto Parser keeps every field it reads, also one the sample never
+  // showed, in the vendor namespace.
+  return {ok:true,draft:{...next,preserveUnmapped:true},sourceFieldCount:allFields.size,
     automaticMappingCount:replaceDefaults?next.mappings.length:0,
     requiresApproval:!unchangedDefaults};
 }

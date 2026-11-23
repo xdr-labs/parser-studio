@@ -396,6 +396,74 @@ rescue ArgumentError
   raise ParserstudioFieldError.new(key)
 end
 
+PARSERSTUDIO_UNMAPPED_COLLISION_ROOT = 'parserstudio_unmapped'
+
+# Owner decision Q3-1 (browser: src/unmappedFields.ts). A field no applied mapping reads - also one the sample
+# never showed - is kept in the vendor namespace at its original path, or under parserstudio_unmapped where that
+# path is a mapped vendor field or a key holds a dot. Strings are kept unchanged; other values as the canonical
+# string mapping renders them. Missing values (nil, ignored, blank) are not written, as for mapped fields.
+def parserstudio_unmapped_walk(value, path, covered, leaves)
+  return if !path.empty? && covered.any? { |prefix| prefix.length <= path.length && path[0, prefix.length] == prefix }
+  if value.is_a?(Hash) && !value.empty?
+    value.each { |key, child| parserstudio_unmapped_walk(child, path + [key.to_s], covered, leaves) }
+  elsif !path.empty?
+    leaves << [path, value]
+  end
+end
+
+def parserstudio_assign_segments(container, path, value)
+  path[0..-2].each do |segment|
+    container[segment] = {} unless container.key?(segment)
+    container = container[segment]
+    return false unless container.is_a?(Hash)
+  end
+  return false if container.key?(path.last)
+  container[path.last] = value
+  true
+end
+
+def parserstudio_preserve_unmapped(original, normalized, profile, ignored)
+  return nil unless @parser_rule_set['normalization']['preserveUnmapped'] == true
+  return nil if @parser_rule_set['extraction']['format'] == 'generic_structural'
+  maps = [@parser_rule_set['normalization']]
+  maps << profile if profile
+  covered = []
+  occupied = []
+  maps.each do |map|
+    ['topFields', 'nsFields', 'vendorFields'].each do |section|
+      map[section].each do |source, rule|
+        applies = begin
+          parserstudio_when_applies?(original, rule)
+        rescue StandardError
+          true
+        end
+        covered << (rule['source_path_kind'] == 'literal_root' ? [source] : source.split('.', -1)) if applies
+        occupied << rule['normalized_name'] if section == 'vendorFields'
+      end
+    end
+  end
+  leaves = []
+  parserstudio_unmapped_walk(original, [], covered, leaves)
+  namespace = @parser_rule_set['vendor']
+  first_failed = nil
+  leaves.each do |path, value|
+    next if value.nil? || (value.is_a?(String) && (ignored.include?(value) || parserstudio_trim_ascii(value).empty?))
+    begin
+      text = value.is_a?(String) ? value : parserstudio_coerce(value, {'data_type' => 'string'})
+      normalized[namespace] = {} unless normalized.key?(namespace)
+      raise ArgumentError, 'Vendor namespace collision' unless normalized[namespace].is_a?(Hash)
+      name = path.join('.')
+      clash = path.any? { |segment| segment.include?('.') } || path.first == PARSERSTUDIO_UNMAPPED_COLLISION_ROOT ||
+        occupied.any? { |taken| taken == name || taken.start_with?(name + '.') || name.start_with?(taken + '.') }
+      target = clash ? [PARSERSTUDIO_UNMAPPED_COLLISION_ROOT] + path : path
+      raise ArgumentError, 'Unmapped output collision' unless parserstudio_assign_segments(normalized[namespace], target, text)
+    rescue StandardError
+      first_failed ||= path.join('.')
+    end
+  end
+  first_failed
+end
+
 # Lookup, conversion and assignment share one field-scoped failure boundary.
 # Continue every independent mapping, retaining only validated output values.
 def parserstudio_apply_field_maps(original, normalized, maps, ignored)
@@ -446,6 +514,8 @@ def parserstudio_normalize(original)
     first_failed ||= failure
     normalized['parserstudio_event_family'] = profile['name']
   end
+  failure = parserstudio_preserve_unmapped(original, normalized, profile, ignored)
+  first_failed ||= failure
   hops = psg_get_tag(original, 'forwarderHops')
   normalized['parserstudio_transport'] = {'forwarder_hops'=>hops} if hops && !hops.empty?
   raise ParserstudioFieldError.new(first_failed) if first_failed

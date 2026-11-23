@@ -270,6 +270,10 @@
           "minLength": 1,
           "maxLength": 128
         },
+        "preserveUnmapped": {
+          "type": "boolean",
+          "enum": [true]
+        },
         "ignoreValues": {
           "type": "array",
           "maxItems": 64,

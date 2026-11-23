@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
+import {mkdirSync,writeFileSync} from 'node:fs';
 import test from 'node:test';
 import {rubyE} from './ruby-argv.js';
 import {compilePair} from '../src/compiler.js';
@@ -22,6 +23,12 @@ function project(){
 }
 function run(lines:string[]):Record<string,unknown>[]{
   const fragment=compilePair(project()).files.find(file=>!file.name.endsWith('.conf'))!.content;
+  // With Q31_RB_DIR set, the parser and its lines are also written there for the Ruby 2.4.9 runner.
+  if(process.env.Q31_RB_DIR){
+    mkdirSync(process.env.Q31_RB_DIR,{recursive:true});
+    writeFileSync(process.env.Q31_RB_DIR+'/forwarder.rb',fragment);
+    writeFileSync(process.env.Q31_RB_DIR+'/forwarder.lines',lines.join('\n')+'\n');
+  }
   const script=["require 'json'","require 'base64'","require 'csv'","require 'time'","require 'ipaddr'",
     'klass=Class.new',"klass.class_eval(Base64.strict_decode64('"+Buffer.from(fragment,'utf8').toString('base64')+"'))",
     'instance=klass.new','results=[]','JSON.parse(STDIN.read).each do |line|',

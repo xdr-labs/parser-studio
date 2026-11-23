@@ -50,6 +50,8 @@ export interface ParserProject {
     msgClass: string;
     msgOriginCategory: string;
     ignoreValues: string[];
+    /** Owner decision Q3-1: every extracted field no mapping reads is kept in the vendor namespace. */
+    preserveUnmapped?: true;
     topFields: FieldMap;
     nsFields: FieldMap;
     vendorFields: FieldMap;

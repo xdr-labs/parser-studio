@@ -49,6 +49,7 @@ export interface BackendParserProject {
     msgClass: string;
     msgOriginCategory: string;
     ignoreValues: string[];
+    preserveUnmapped?: true;
     topFields: Record<string, BackendField>;
     nsFields: Record<string, BackendField>;
     vendorFields: Record<string, BackendField>;
@@ -329,6 +330,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       msgClass: options.slug,
       msgOriginCategory: category,
       ignoreValues: ['', 'N/A', '-'],
+      ...(draft.preserveUnmapped===true?{preserveUnmapped:true as const}:{}),
       topFields, nsFields, vendorFields,
     },
     ...(options.enrichment?.length ? {
