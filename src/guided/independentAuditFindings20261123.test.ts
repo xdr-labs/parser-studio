@@ -8,6 +8,7 @@ import {prepareAutoParserDraft} from './autoParserDraft';
 import type {BackendCapabilities} from './backendCapabilities';
 import {isCarriedFamilyMapping,READING_FAMILY_DISCRIMINATOR} from './multiEventRouting';
 import {mergeFamilyCandidate,projectFamilyDraft} from './familyScopedAssist';
+import {regexReadsUncapturedText} from './regexSourceCoverage';
 
 // Repro tests of the independent audit of 2026-11-23 (changes after e78feb9). SYNTHETIC lines, built from the
 // auditor's inputs.
@@ -133,5 +134,67 @@ describe('F3: the WatchGuard Traffic Monitor layout has ports for TCP and UDP on
     const fields=extractGenericStructural(UDP,undefined,'dedicated').fields as Record<string,Record<string,unknown>>;
     expect(fields.generic!.mode).toBe('watchguard_traffic_monitor');
     expect(fields.watchguard).toMatchObject({protocol:'udp',src_port:'53000',dst_port:'53'});
+  });
+});
+
+// Re-audit of 2026-11-23 (second independent audit, ad53b51 and e65baa6). SYNTHETIC lines from the auditor.
+describe('re-audit Q2-1: a mixed family carries a source whatever container its sample showed',()=>{
+  it('keeps a root key of a JSON event and a dotted key of a key=value event',()=>{
+    const draft=journey(['{"net":{"srcip":"10.1.1.1","dstip":"10.2.2.2"}}','srcip=10.5.5.6 dstip=10.6.6.6 user=bob'].join('\n'));
+    expect(draft.eventProfiles?.discriminator).toBe(READING_FAMILY_DISCRIMINATOR);
+    const events=preview(['{"net":{"srcip":"10.1.1.9","dstip":"10.2.2.9"},"user":"alice"}',
+      'srcip=10.5.5.6 dstip=10.6.6.6 user=bob net.srcip=10.7.7.7'].join('\n'),draft).events;
+    expect(events.map(event=>event.parseStatus)).toEqual(['FULL','FULL']);
+    expect(text(events[0]!.normalized)).toContain('"alice"');
+    expect(text(events[1]!.normalized)).toContain('"10.7.7.7"');
+    expect(events[1]!.normalized.srcip).toBe('10.5.5.6');
+  });
+});
+
+describe('re-audit Q2-2: a carried source keeps its text',()=>{
+  it('does not type a key=value value by the JSON values of another family',()=>{
+    const draft=journey(['{"srcip":"10.1.1.1","dstip":"10.2.2.2","bytes":100,"ok":true}',
+      '{"srcip":"10.1.1.3","dstip":"10.2.2.4","bytes":200,"ok":false}','src=10.5.5.6 dst=203.0.113.21 action=deny'].join('\n'));
+    expect(draft.eventProfiles?.discriminator).toBe(READING_FAMILY_DISCRIMINATOR);
+    const base='src=10.5.5.6 dst=203.0.113.21 action=deny';
+    const events=preview([base+' bytes=007 ok=yes',base+' bytes=abc',base+' ok=true bytes=5'].join('\n'),draft).events;
+    expect(events.map(event=>event.parseStatus)).toEqual(['FULL','FULL','FULL']);
+    expect(events.map(event=>event.normalizedOk)).toEqual([true,true,true]);
+    expect(text(events[0]!.normalized)).toContain('"007"');
+    expect(text(events[0]!.normalized)).toContain('"yes"');
+    expect(text(events[1]!.normalized)).toContain('"abc"');
+    expect(text(events[2]!.normalized)).toContain('"true"');
+  });
+});
+
+describe('re-audit Q2-3: an optional literal outside a capture reads uncaptured text',()=>{
+  it('rejects (?:DENIED )? and keeps optional white space allowed',()=>{
+    expect(regexReadsUncapturedText('^(?<a>[A-Z0-9]+) (?:DENIED )?(?<b>[a-z0-9]+)$')).toBe(true);
+    expect(regexReadsUncapturedText('^(?<a>[A-Z0-9]+) (?:DENIED){0,1}(?<b>[a-z0-9]+)$')).toBe(true);
+    expect(regexReadsUncapturedText('^(?<a>[A-Z0-9]+)(?: )?(?<b>[a-z0-9]+)$')).toBe(false);
+    expect(regexReadsUncapturedText('^(?<a>[A-Z0-9]+) (?:(?<d>DENIED) )?(?<b>[a-z0-9]+)$')).toBe(false);
+  });
+});
+
+describe('re-audit Q2-4 and Q2-5: a family result may not drop a value of the family',()=>{
+  const S5424='<14>1 2026-10-12T01:02:03Z host5 app 1 - - srcip=10.1.1.1 dstip=10.2.2.2 srcport=1000 dstport=22 action=allow';
+  const S3164='<134>Oct 12 01:02:05 fw01 src=10.5.5.6 dst=203.0.113.21 sport=2001 dport=80 action=deny user=bob';
+  const sample=[S5424,S3164].join('\n');
+  it('refuses a result that writes the vendor output of a carried source',()=>{
+    const draft=journey(sample);
+    const single=projectFamilyDraft(draft,'rfc5424_kv')!;
+    const port=single.mappings.find(rule=>rule.source==='body.dstport')!;
+    const candidate={...single,mappings:single.mappings.map(rule=>rule===port?{...rule,target:'user'}:rule),
+      guided:{...single.guided!,groups:{...single.guided!.groups,[port.id]:'vendor_fields' as const}}};
+    expect(mergeFamilyCandidate(draft,'rfc5424_kv',candidate,preview(sample,draft)))
+      .toEqual({ok:false,reason:'DESTINATION_COLLISION'});
+  });
+  it('refuses a result that leaves out a source the family maps',()=>{
+    const draft=journey(sample);
+    const single=projectFamilyDraft(draft,'rfc3164_kv')!;
+    expect(single.mappings.some(rule=>rule.source==='body.user')).toBe(true);
+    const candidate={...single,mappings:single.mappings.filter(rule=>rule.source!=='body.user')};
+    expect(mergeFamilyCandidate(draft,'rfc3164_kv',candidate,preview(sample,draft)))
+      .toEqual({ok:false,reason:'FAMILY_SOURCE_REMOVED'});
   });
 });

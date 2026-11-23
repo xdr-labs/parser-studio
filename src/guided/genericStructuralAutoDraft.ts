@@ -150,13 +150,18 @@ export interface EventFamilyRouting{
   discriminator:string;
   /** The family of a preview event, or undefined when it has none (no routing then). */
   familyOf:(event:SuiteResult['events'][number])=>string|undefined;
+  /**
+   * Whether each family carries the sources that only other families of the sample showed (as vendor text). A
+   * mixed parser emits mapped sources only, so it must (independent audit 2026-11-23, F1). A Generic Structural
+   * parser keeps every field it read in parserstudio_source, so a carried mapping would add nothing there.
+   */
+  carryOtherFamilySources:boolean;
 }
-const GENERIC_MODE_FAMILIES:EventFamilyRouting={discriminator:'generic.mode',familyOf:event=>{
+const GENERIC_MODE_FAMILIES:EventFamilyRouting={discriminator:'generic.mode',carryOtherFamilySources:false,familyOf:event=>{
   const mode=lookupFieldValue(event.fields,'generic.mode');
   return mode.found&&typeof mode.value==='string'?mode.value:undefined;
 }};
 const FAMILY_NAME=/^[a-z][a-z0-9_-]{0,31}$/u;
-const containerOf=(path:string)=>{const at=path.lastIndexOf('.');return at<0?'':path.slice(0,at);};
 type Decision={target:string;type:MappingRule['type'];group:FieldGroup};
 
 function officialValues(suite:SuiteResult,vendor:string):number{
@@ -184,12 +189,9 @@ export function familyRoutedDraft(
   const names=[...families.keys()].sort();
   const vendorMappings=new Map(candidate.mappings.map(mapping=>[mapping.source,mapping]));
   const decisions=new Map<string,Map<string,Decision|null>>();
-  // The containers each family's reading produces (the parent path of every leaf; '' for the root).
-  const containers=new Map<string,Set<string>>();
   for(const name of names){
     const events=families.get(name)!.map(index=>suite.events[index]!);
     const present=new Set(events.flatMap(event=>listSafeLeafPaths(event.fields)));
-    containers.set(name,new Set([...present].map(containerOf)));
     const decided=new Map<string,Decision|null>();
     for(const mapping of candidate.mappings)if(present.has(mapping.source))decided.set(mapping.source,null);
     // Only the mappings of this family are its taken destinations: the vendor name another family keeps
@@ -226,14 +228,19 @@ export function familyRoutedDraft(
       // Every family keeps every source that a family mapping names, as a vendor field where its own records did
       // not decide an official one: an event of this family may carry a key the sample showed only in another
       // family, and a mixed parser emits mapped sources only (independent audit 2026-11-23, F1: user=alice and a
-      // second srcip were dropped from FULL events). A source the records of this family do not have is carried,
-      // where an event of the family can hold it: its container is one the family's reading produces (the RFC
-      // 3164 and RFC 5424 key=value bodies share body.*; a PAN-OS CSV record never has the body.* of a CEF record).
+      // second srcip were dropped from FULL events). A source the records of this family do not have is carried
+      // when the routing needs it (carryOtherFamilySources). The container of a source is no test of whether an
+      // event of the family can hold it: a JSON family whose sample has nested keys only can still carry a root
+      // key at run time (re-audit 2026-11-23, Q2-1).
       if(!local.has(mapping.source))continue;
-      if(!decided.has(mapping.source)&&!containers.get(name)!.has(
-        mapping.sourcePathKind==='literal_root'?'':containerOf(mapping.source)))continue;
-      const id=decided.has(mapping.source)?'family-'+String(index)+'-'+String(n++):carriedFamilyMappingId(index,n++);
-      const [rule,group]=apply(mapping,decided.get(mapping.source)??null,id);
+      const carried=!decided.has(mapping.source);
+      if(carried&&!routing.carryOtherFamilySources)continue;
+      const id=carried?carriedFamilyMappingId(index,n++):'family-'+String(index)+'-'+String(n++);
+      const [applied,group]=apply(mapping,decided.get(mapping.source)??null,id);
+      // A carried source keeps its text: its type was inferred from the values of another family, and a key=value
+      // or JSON event of this family may hold any text under that key (re-audit 2026-11-23, Q2-2: bytes=007 lost its
+      // leading zeros, bytes=abc failed the event).
+      const rule=carried?{...applied,type:'string' as const}:applied;
       mappings.push(rule);groups[rule.id]=group;
     }
     return {name,equals:name,mappings};

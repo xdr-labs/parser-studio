@@ -632,6 +632,7 @@ const MERGE_NOTICE:Record<string,string>={
   NO_SINGLE_DISCRIMINATOR_VALUE:'The records that no event type recognizes do not share one event type value. Add them one type at a time.',
   INVALID_FAMILY:'The merged event types did not pass validation. Nothing was changed.',
   SOURCE_NOT_IN_FAMILY:'The result reads a field that no record of this event type contains. It was not applied.',
+  FAMILY_SOURCE_REMOVED:'The result leaves out a field this event type maps; its values would be lost. It was not applied.',
   NO_FAMILY_CHANGE:'The result leaves this event type unchanged. Nothing was applied.',
   UNKNOWN_FAMILY:'The selected event type is no longer part of this parser.',
   NO_EVENT_PROFILES:'This parser no longer has event types.',

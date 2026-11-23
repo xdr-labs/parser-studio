@@ -26,7 +26,7 @@ export interface FamilyScope{
 export type FamilyMergeResult={ok:true;draft:ParserDraft}|{ok:false;reason:
   'NO_EVENT_PROFILES'|'UNKNOWN_FAMILY'|'SOURCE_FORMAT_CHANGED'|'SHARED_MAPPING_CHANGED'|'ENRICHMENT_CHANGED'|
   'CLASSIFICATION_CHANGED'|'NO_FAMILY_MAPPING'|'DESTINATION_COLLISION'|'NO_SINGLE_DISCRIMINATOR_VALUE'|
-  'INVALID_FAMILY'|'SOURCE_NOT_IN_FAMILY'|'NO_FAMILY_CHANGE'};
+  'INVALID_FAMILY'|'SOURCE_NOT_IN_FAMILY'|'NO_FAMILY_CHANGE'|'FAMILY_SOURCE_REMOVED'};
 
 const EXTRACTION_KEYS=['format','pattern','csvColumns','csvDelimiter','syslogBodyFormat','mixedFormats',
   'genericStructuralProfile','genericStructuralFamilyGrammar','forwarder','omitSourceRaw'] as const;
@@ -112,6 +112,13 @@ export function mergeFamilyCandidate(
       const found=lookupFieldValue(suite.events[at]!.fields,rule.source,rule.sourcePathKind);
       return found.found&&found.value!==undefined&&found.value!==null&&typeof found.value!=='object';
     }))return {ok:false,reason:'SOURCE_NOT_IN_FAMILY'};
+  // A result keeps every source the family maps: a source it leaves out would vanish from FULL events of the
+  // family (re-audit 2026-11-23, Q2-5). Carried sources are kept by the merge itself.
+  if(index>=0){
+    const kept=new Set([...draft.mappings,...own].map(rule=>rule.source));
+    if(profiles.variants[index]!.mappings.some(rule=>!isCarriedFamilyMapping(rule)&&!kept.has(rule.source)))
+      return {ok:false,reason:'FAMILY_SOURCE_REMOVED'};
+  }
   // A result that leaves the family as it is is reported, not applied as a change (audit F4).
   if(index>=0){
     const before=profiles.variants[index]!.mappings.filter(rule=>!isCarriedFamilyMapping(rule))
@@ -137,11 +144,13 @@ export function mergeFamilyCandidate(
   });
   let variants:EventProfile[];
   if(index>=0){
-    // The carried mappings stay, unless the result now maps their source itself or writes their output.
+    // The carried mappings stay, unless the result now maps their source itself. A result that writes the output
+    // of a carried mapping would drop that source's value: it is refused (re-audit 2026-11-23, Q2-4).
     const outputs=[...draft.mappings.map(rule=>outputOf(draft,rule)),...own.map(rule=>outputOf(candidate,rule))];
     const sources=new Set(own.map(rule=>rule.source));
-    const carried=profiles.variants[index]!.mappings.filter(rule=>isCarriedFamilyMapping(rule)&&
-      !sources.has(rule.source)&&!outputs.some(other=>overlaps(other,outputOf(draft,rule))));
+    const carried=profiles.variants[index]!.mappings.filter(rule=>isCarriedFamilyMapping(rule)&&!sources.has(rule.source));
+    if(carried.some(rule=>outputs.some(other=>overlaps(other,outputOf(draft,rule)))))
+      return {ok:false,reason:'DESTINATION_COLLISION'};
     for(const rule of profiles.variants[index]!.mappings)if(!carried.includes(rule))delete groups[rule.id];
     variants=profiles.variants.map((variant,i)=>i===index?{...variant,mappings:[...mappings,...carried]}:variant);
   }else{

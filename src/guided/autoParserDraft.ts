@@ -178,7 +178,7 @@ export function prepareAutoParserDraft(
     if(next.format==='mixed'&&options.eventFamilyRouting!==false){
       const shared=preview(source,next);
       const routed=familyRoutedDraft(source,next,shared,{discriminator:READING_FAMILY_DISCRIMINATOR,
-        familyOf:event=>event.readingFamily});
+        carryOtherFamilySources:true,familyOf:event=>event.readingFamily});
       if(routed){
         next.mappings=routed.draft.mappings;next.eventProfiles=routed.draft.eventProfiles;
         next.guided=routed.draft.guided;

@@ -20,6 +20,15 @@ function blank(node:PortableRegexNode):boolean{
     (node.kind==='escape'&&(node.text==='\\s'||node.text==='\\t'))||
     (node.kind==='class'&&BLANK_CLASS.test(node.text));
 }
+/** White space only, also inside a non-capturing group or a sequence: `(?: )?` keeps no data. */
+function blankRun(node:PortableRegexNode):boolean{
+  switch(node.kind){
+    case 'group':return node.captureName===null&&blankRun(node.body);
+    case 'sequence':return node.nodes.length>0&&node.nodes.every(blankRun);
+    case 'repeat':return blankRun(node.atom);
+    default:return blank(node);
+  }
+}
 function captures(node:PortableRegexNode):boolean{
   switch(node.kind){
     case 'sequence':return node.nodes.some(captures);
@@ -36,7 +45,9 @@ function reads(node:PortableRegexNode):boolean{
     case 'alternation':return node.branches.some(branch=>reads(branch)||!captures(branch));
     case 'group':return node.captureName===null&&reads(node.body);
     // A run of white space is no data; any other repetition outside a capture loses what it repeated.
-    case 'repeat':return reads(node.atom)||(node.max!==1&&!blank(node.atom)&&!captures(node.atom));
+    // An optional piece (min 0, max 1) tells by its presence what no field keeps, like a choice between
+    // alternatives (re-audit 2026-11-23, Q2-3: `(?:DENIED )?` made a denied and an allowed line read alike).
+    case 'repeat':return reads(node.atom)||((node.max!==1||node.min!==node.max)&&!blankRun(node.atom)&&!captures(node.atom));
     case 'literal':case 'anchor':return false;
     // \b and \B assert a position; \t and \xHH are one literal character; a letter class reads a character.
     case 'escape':return /^\\[dDwWsS]$/u.test(node.text)&&node.text!=='\\s';
