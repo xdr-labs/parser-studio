@@ -13,12 +13,13 @@ import {lookupFieldValue} from '../fieldPaths';
 import {defaultGuidedOptions} from './contract';
 import {sha256Utf8Hex} from '../sha256';
 import {selectDraftFormat} from './draftFormatTransition';
+import {regexReadsUncapturedText} from './regexSourceCoverage';
 
 const MAX_RECIPE_BYTES=32*1024;
 export type AIExchangeReason='SOURCE_LIMIT'|'UNTRUSTED_PREVIEW'|
  'PROJECT_UNSUPPORTED'|'CURRENT_RECIPE_UNAVAILABLE'|'INPUT_TOO_LARGE'|
  'INVALID_JSON'|'UNTRUSTED_RECIPE'|'SOURCE_IDENTITY_MISMATCH'|
- 'FORMAT_MISMATCH'|'UNSUPPORTED_OPERATION';
+ 'FORMAT_MISMATCH'|'UNSUPPORTED_OPERATION'|'UNCAPTURED_SOURCE_TEXT';
 export type AIPromptResult=
  | {ok:true;prompt:string;sampleSha256:string;sourceCount:number;
      currentProjectImportReady:boolean;rawLogsIncluded:false;automaticUpload:false}
@@ -32,6 +33,10 @@ export type AIImportResult=
  | {ok:false;reason:AIExchangeReason};
 
 async function digest(text:string):Promise<string>{return sha256Utf8Hex(text);}
+/** A returned parse_regex stage may not read text of the line that no field keeps (regexSourceCoverage.ts). */
+function dropsSourceText(recipe:ParserRecipeV2):boolean{
+ return recipe.stages.some(stage=>stage.op==='parse_regex'&&regexReadsUncapturedText(stage.pattern));
+}
 function verified(source:string,suite:SuiteResult):boolean{
  if(typeof source!=='string'||!source.trim()||
   new TextEncoder().encode(source).byteLength>MAX_DATASET_BYTES||
@@ -94,6 +99,7 @@ export async function importReviewOnlyAIRecipe(
  let value:unknown;
  try{value=JSON.parse(text) as unknown;}catch{return {ok:false,reason:'INVALID_JSON'};}
  if(!validateReviewableRecipe(value))return {ok:false,reason:'UNTRUSTED_RECIPE'};
+ if(dropsSourceText(value))return {ok:false,reason:'UNCAPTURED_SOURCE_TEXT'};
  const current=await buildReviewableRecipe(source,draft,suite);
  if(!current.ok)return {ok:false,reason:'CURRENT_RECIPE_UNAVAILABLE'};
  const imported=value as ParserRecipeV2;
@@ -135,6 +141,7 @@ export async function importRecoveryAIRecipe(
  let value:unknown;
  try{value=JSON.parse(text) as unknown;}catch{return {ok:false,reason:'INVALID_JSON'};}
  if(!validateReviewableRecipe(value))return {ok:false,reason:'UNTRUSTED_RECIPE'};
+ if(dropsSourceText(value))return {ok:false,reason:'UNCAPTURED_SOURCE_TEXT'};
  const imported=value as ParserRecipeV2;
  const opts=draft.guided??defaultGuidedOptions();
  const expectedProject='draft-'+opts.slug;

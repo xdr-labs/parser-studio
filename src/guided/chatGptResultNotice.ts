@@ -33,6 +33,7 @@ const REJECTED_REASON_TEXT:Record<string,string>={
   SOURCE_LIMIT:'The sample is larger than Parser Studio can check in one step',
   UNTRUSTED_PREVIEW:'The preview this answer is based on could not be trusted',
   RECIPE_UNSUPPORTED:'The answer cannot be turned into a parser that Parser Studio can build',
+  UNCAPTURED_SOURCE_TEXT:'The answer reads part of each log line without keeping it in a field, so that text would be lost',
 };
 
 export function describeRejectedReason(reason:string):string{

@@ -69,7 +69,7 @@ const known=new Set<string>([
   'BACKEND_UNSUPPORTED','CLASSIFICATION_UNSUPPORTED',
   'REGRESSION','HOLDOUT_FAILED','SOURCE_TEST_FAILED',
   'NATIVE_VALIDATION_FAILED','SYNTHETIC_VARIANT_FAILED','REVIEW_REQUIRED','NOT_JSON',
-  'NO_SAFE_CHANGE','SOURCE_INVALID','EXTRACTION_NO_MATCH',
+  'NO_SAFE_CHANGE','SOURCE_INVALID','EXTRACTION_NO_MATCH','UNCAPTURED_SOURCE_TEXT',
 ]);
 export function buildAdaptiveRetryPrompt(input:RetryPromptInput):string{
   const {basePrompt,previousResponse,failure,diagnostic,attempt}=input;
