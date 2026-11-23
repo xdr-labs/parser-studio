@@ -14,7 +14,7 @@ import type {ParserProject} from '../src/types.js';
 // parsers are also written there for the Ruby 2.4.9 runner.
 const rubyAvailable=spawnSync('ruby',['-v'],{encoding:'utf8'}).status===0;
 const map=(entries:Record<string,[string,string]>)=>Object.fromEntries(Object.entries(entries)
-  .map(([source,[name,type]])=>[source,{normalized_name:name,data_type:type}]));
+  .map(([source,[name,type]])=>[source,{normalized_name:name,data_type:type}])) as ParserProject['normalization']['topFields'];
 function project(format:ParserProject['extraction'],top:Record<string,[string,string]>,vendor:Record<string,[string,string]>,
   preserve=true):ParserProject{
   const p=sampleProject();

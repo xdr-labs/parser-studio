@@ -671,7 +671,7 @@ const TS_FAMILY_MUTANTS: Mutant[] = [
   { id: 'ts-cef-duplicate-field-overwrites', file: 'src/structuredFamilies.ts', find: 'if(Object.prototype.hasOwnProperty.call(values,key))return failure(duplicateFieldMessage(key));', replace: '' },
   { id: 'ts-leef-duplicate-field-overwrites', file: 'src/structuredFamilies.ts', find: 'if (Object.prototype.hasOwnProperty.call(record, key)) return failure(duplicateFieldMessage(key));', replace: '' },
   { id: 'ts-cef-header-fields-shifted', file: 'src/structuredFamilies.ts', find: 'cef_device_product: parts[1], cef_device_version: parts[2],', replace: 'cef_device_product: parts[2], cef_device_version: parts[1],' },
-  { id: 'ts-cef-dot-excludes-line-separator', file: 'src/structuredFamilies.ts', find: "/^CEF:(\\d+)\\|(.*)$/su.exec(input)", replace: "/^CEF:(\\d+)\\|(.*)$/u.exec(input)" },
+  { id: 'ts-cef-dot-excludes-line-separator', file: 'src/structuredFamilies.ts', find: "/^CEF: ?(\\d+)\\|(.*)$/su.exec(input)", replace: "/^CEF: ?(\\d+)\\|(.*)$/u.exec(input)" },
   // Re-introduces F-11: header escapes decoded in the extension as well, so a value is decoded twice.
   { id: 'ts-family-extension-decoded-twice', file: 'src/structuredFamilies.ts', find: "if (output.length > splits) { output[output.length - 1] += char; continue; }", replace: '' },
 ];
