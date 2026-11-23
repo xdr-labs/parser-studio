@@ -599,7 +599,7 @@ def psg_extract_mixed(raw, settings)
     if ((!psg_t(body) || !psg_t(mode)) || !selected.include?(mode))
       return psg_failure((bsdEnvelope ? 'RFC3164 TAG body is unsupported or not allowlisted' : 'Wrapped Syslog is malformed or not in mixed allowlist'))
     end
-    return psg_extract_structured_family(raw, grammar, body)
+    return psg_mixed_family(psg_extract_structured_family(raw, grammar, body), mode)
   end
   columns = (psg_null?(psg_t2 = settings['csvColumns']) ? [] : psg_t2)
   delimiter = (psg_null?(psg_t3 = settings['csvDelimiter']) ? ',' : psg_t3)
@@ -608,15 +608,15 @@ def psg_extract_mixed(raw, settings)
     return psg_failure('Mixed event is unsupported or excluded by allowlist')
   end
   if (family == 'kv')
-    return psg_strict_key_values(raw)
+    return psg_mixed_family(psg_strict_key_values(raw), family)
   end
   if (family == 'csv')
-    return psg_extract_csv_row(raw, columns, delimiter)
+    return psg_mixed_family(psg_extract_csv_row(raw, columns, delimiter), family)
   end
   if (family == 'json')
-    return psg_extract_json_object(raw)
+    return psg_mixed_family(psg_extract_json_object(raw), family)
   end
-  return psg_extract_structured_family(raw, family)
+  return psg_mixed_family(psg_extract_structured_family(raw, family), family)
 end
 
 # src/structuredFamilies.ts: extractStructuredFamily
@@ -1197,6 +1197,14 @@ def psg_matches_header_token(token, text)
   return psg_k_compiled_tokens[token].match?(text)
 end
 
+# src/grammar/extractEvent.ts: mixedFamily
+def psg_mixed_family(result, family)
+  if (result['errors'].length == 0)
+    psg_set_tag(result, 'mixedFamily', family)
+  end
+  return result
+end
+
 # src/javaStacktrace.ts: parseJavaStacktrace
 def psg_parse_java_stacktrace(text)
   lines = head = frames = causes = root = last = matched = nil
@@ -1357,16 +1365,17 @@ end
 
 # src/grammar/readEvent.ts: readEvent
 def psg_read_event(raw, settings)
-  relay = reason = source = extraction = verdict = nil
+  relay = reason = source = extraction = verdict = family = nil
   relay = psg_inspect_declared_forwarders(raw, settings['forwarder'])
   if (relay['status'] == 'ABSTAIN_UNSAFE')
     reason = ('The forwarded log cannot be safely unwrapped: ' + relay['reason'])
-    return {'fields' => {}, 'errors' => [reason], 'status' => 'UNKNOWN', 'reasons' => [reason], 'lostKeys' => [], 'forwarderHops' => []}
+    return {'fields' => {}, 'errors' => [reason], 'status' => 'UNKNOWN', 'reasons' => [reason], 'lostKeys' => [], 'forwarderHops' => [], 'family' => ''}
   end
   source = ((relay['status'] == 'UNWRAPPED') ? relay['payload'] : raw)
   extraction = psg_extract_event(source, settings)
   verdict = psg_grade_extraction(source, settings, extraction)
-  return {'fields' => extraction['fields'], 'errors' => extraction['errors'], 'status' => verdict['status'], 'reasons' => verdict['reasons'], 'lostKeys' => psg_map(verdict['lostPairs'], lambda { |pair| pair['key'] }), 'forwarderHops' => relay['hops']}
+  family = psg_get_tag(extraction, 'mixedFamily')
+  return {'fields' => extraction['fields'], 'errors' => extraction['errors'], 'status' => verdict['status'], 'reasons' => verdict['reasons'], 'lostKeys' => psg_map(verdict['lostPairs'], lambda { |pair| pair['key'] }), 'forwarderHops' => relay['hops'], 'family' => (family.is_a?(String) ? family : '')}
 end
 
 # src/grammar/parseStatus.ts: readRawPairs

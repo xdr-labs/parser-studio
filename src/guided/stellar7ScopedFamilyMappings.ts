@@ -37,11 +37,11 @@ export function proposeStellar7FamilyMappings(
   if(!suite?.events.length||!draft.eventProfiles)return [];
   const config=draft.eventProfiles;
   if(suite.events.some(event=>!event.extracted||
-    !inspectEventProfile(event.fields,config).profile))return [];
+    !inspectEventProfile(event.fields,config,event.readingFamily).profile))return [];
   const result:ScopedFamilyStellar7Candidate[]=[];
   for(const variant of config.variants){
     const events=suite.events.filter(event=>
-      inspectEventProfile(event.fields,config).profile?.name===variant.name);
+      inspectEventProfile(event.fields,config,event.readingFamily).profile?.name===variant.name);
     if(!events.length)continue;
     const subset={...suite,events};
     const isolated={...draft,mappings:[],guided:draft.guided

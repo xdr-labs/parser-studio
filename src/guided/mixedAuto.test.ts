@@ -46,7 +46,14 @@ describe('P0 strict mixed one-line supported formats, fail closed',()=>{
   const replay=preview(sample,proposed.draft);
   expect(replay.counts).toMatchObject({total:4,matched:4,extracted:4,
    normalized:4,failures:0});
-  const v02=await buildReviewableRecipe(sample,proposed.draft,replay);
+  // The Auto Parser routes this sample by reading family (@reading_family), so each family gets its official
+  // fields. Recipe v0.2 cannot represent per-event routing and fails closed for the routed draft; the mixed
+  // dispatch of the recipe is checked on the draft prepared with one shared mapping set.
+  expect(proposed.draft.eventProfiles?.discriminator).toBe('@reading_family');
+  expect(await buildReviewableRecipe(sample,proposed.draft,replay)).toMatchObject({ok:false,reason:'COMPILER_UNSUPPORTED'});
+  const shared=prepareAutoParserDraft(sample,draft,suite,ledger,assessed,{eventFamilyRouting:false});
+  if(!shared.ok)throw new Error('shared mixed draft expected');
+  const v02=await buildReviewableRecipe(sample,shared.draft,preview(sample,shared.draft));
   expect(v02.ok).toBe(true);
   if(!v02.ok)return;
   expect(v02.recipe.sourceFormat).toBe('mixed');
@@ -67,9 +74,10 @@ describe('P0 strict mixed one-line supported formats, fail closed',()=>{
       analyzeLogEnvelopes(source,'single-line'),assessment))
       .toMatchObject({ok:false,reason:'MIXED_OR_UNKNOWN'});
   }
+  // Recipe v0.2 has no per-event routing: the recipe is that of the draft prepared with one shared mapping set.
   const generated=prepareAutoParserDraft(sample,base,preview(sample,base),
     analyzeLogEnvelopes(sample,'single-line'),
-    assessEnvelopeCompilation(analyzeLogEnvelopes(sample,'single-line'),cap));
+    assessEnvelopeCompilation(analyzeLogEnvelopes(sample,'single-line'),cap),{eventFamilyRouting:false});
   if(!generated.ok)throw new Error('Safe mixed draft expected');
   const draft=generated.draft;
   const record=await buildReviewableRecipe(sample,draft,preview(sample,draft));

@@ -22,6 +22,8 @@ export interface EventReading {
   lostKeys: string[];
   /** The relay envelopes that were removed, outermost first. */
   forwarderHops: ForwarderHop[];
+  /** The family a mixed parser read the event with (src/grammar/extractEvent.ts extractMixed); '' otherwise. */
+  family: string;
 }
 
 /**
@@ -66,13 +68,15 @@ export function readEvent(raw: string, settings: ExtractionSettings): EventReadi
   const relay = inspectDeclaredForwarders(raw, settings.forwarder);
   if (relay.status === 'ABSTAIN_UNSAFE') {
     const reason = 'The forwarded log cannot be safely unwrapped: ' + relay.reason;
-    return { fields: {}, errors: [reason], status: 'UNKNOWN', reasons: [reason], lostKeys: [], forwarderHops: [] };
+    return { fields: {}, errors: [reason], status: 'UNKNOWN', reasons: [reason], lostKeys: [], forwarderHops: [], family: '' };
   }
   const source = relay.status === 'UNWRAPPED' ? relay.payload : raw;
   const extraction = extractEvent(source, settings);
   const verdict = gradeExtraction(source, settings, extraction);
+  const family = getTag(extraction, 'mixedFamily');
   return {
     fields: extraction.fields, errors: extraction.errors, status: verdict.status, reasons: verdict.reasons,
     lostKeys: verdict.lostPairs.map(pair => pair.key), forwarderHops: relay.hops,
+    family: typeof family === 'string' ? family : '',
   };
 }

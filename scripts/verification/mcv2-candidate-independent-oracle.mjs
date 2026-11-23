@@ -321,6 +321,17 @@ assert.deepEqual(read('generic_structural',[inKv,other],'generic.kv.srcport'),['
 assert.deepEqual(read('json',[inKv,other],'generic.kv.srcip'),['REVIEW'],'the same path in a JSON log');
 assert.deepEqual(read('syslog_rfc3164',[inBody,other],'body.srcip'),['HIGH'],'RFC 3164 body');
 assert.deepEqual(read('syslog_rfc5424',[inBody,other],'body.srcip'),['HIGH'],'RFC 5424 body');
+// A mixed event is read by the grammar of its family (the router's reading family), never by the name 'mixed'.
+const mixedRead=(families,events,source)=>mod.suggestNormalizationCandidatesFromSuite(
+  {events:events.map((fields,index)=>({fields,effectiveFormat:'mixed',readingFamily:families[index]}))},[])
+  .filter(r=>r.source===source).map(r=>r.confidence);
+assert.deepEqual(mixedRead(['rfc5424_kv','rfc5424_kv'],[inBody,other],'body.srcip'),['HIGH'],'RFC 5424 body of a mixed reading');
+assert.deepEqual(mixedRead(['rfc3164_kv','rfc3164_kv'],[inBody,other],'body.srcip'),['HIGH'],'RFC 3164 body of a mixed reading');
+assert.deepEqual(mixedRead(['json','json'],[inBody,other],'body.srcip'),['REVIEW'],'a JSON object called body in a mixed reading');
+assert.deepEqual(read('mixed',[inBody,other],'body.srcip'),['REVIEW'],'a mixed event without its reading family');
+assert.deepEqual(mod.suggestNormalizationCandidatesFromSuite({events:[inBody,other].map(fields=>
+  ({fields,effectiveFormat:'json',readingFamily:'rfc5424_kv'}))},[]).filter(r=>r.source==='body.srcip').map(r=>r.confidence),
+  ['REVIEW'],'a reading family is read only for a mixed event');
 assert.deepEqual(read('json',[inBody,other],'body.srcip'),['REVIEW'],'a JSON object called body');
 assert.deepEqual(read('kv',[inBody,other],'body.srcip'),['REVIEW'],'no container in a key=value reading');
 assert.deepEqual(read('syslog_rfc3164',[inKv,other],'generic.kv.srcip'),['REVIEW'],'generic container under a Syslog reading');

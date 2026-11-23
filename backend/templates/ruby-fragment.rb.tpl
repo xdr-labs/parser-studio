@@ -57,6 +57,9 @@ def parserstudio_extract(text)
   end
   result = psg_export(reading['fields'])
   psg_set_tag(result, 'readingStatus', reading['status'])
+  # The family a mixed parser read the event with travels out of band, like the status: no field of the event
+  # can claim it (eventProfiles discriminator @reading_family).
+  psg_set_tag(result, 'readingFamily', reading['family']) unless reading['family'].empty?
   unless reading['forwarderHops'].empty?
     result['__parserstudio_forwarder_hops'] = reading['forwarderHops'].map do |hop|
       {'relay_host'=>hop['relayHost'], 'relay_timestamp'=>hop['relayTimestamp'], 'envelope'=>hop['format'],

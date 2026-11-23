@@ -124,7 +124,7 @@ export function buildAutomaticGenericStructuralDraft(
      candidateSuite.counts.failures!==0)return null;
 
   // An explicit profile combination keeps one reviewed mapping set: its recipe has no event-family routing.
-  const routed=discovery.profile?null:familyRoutedDraft(source,candidate,candidateSuite);
+  const routed=discovery.profile?null:familyRoutedDraft(source,candidate,candidateSuite,GENERIC_MODE_FAMILIES);
   if(routed)return {draft:routed.draft,suite:routed.suite,automaticOfficialMappings:routed.official};
   return {draft:candidate,suite:candidateSuite,
     automaticOfficialMappings:suggestions.length};
@@ -142,8 +142,19 @@ export function buildAutomaticGenericStructuralDraft(
  * sample is not parsed with the mappings of another family: the event-profile contract reports it
  * (UNRECOGNIZED_EVENT_FAMILY), and the generated parser keeps its original text in parser_raw_msg.
  * The routed draft is used only when it maps strictly more official values than the shared draft.
+ * A mixed parser is routed the same way by the family its router read each event with (@reading_family):
+ * autoParserDraft.ts, the Auto Parser path for a sample of several allowlisted one-line families.
  */
-const FAMILY_DISCRIMINATOR='generic.mode';
+export interface EventFamilyRouting{
+  /** eventProfiles discriminator of the routed draft. */
+  discriminator:string;
+  /** The family of a preview event, or undefined when it has none (no routing then). */
+  familyOf:(event:SuiteResult['events'][number])=>string|undefined;
+}
+const GENERIC_MODE_FAMILIES:EventFamilyRouting={discriminator:'generic.mode',familyOf:event=>{
+  const mode=lookupFieldValue(event.fields,'generic.mode');
+  return mode.found&&typeof mode.value==='string'?mode.value:undefined;
+}};
 const FAMILY_NAME=/^[a-z][a-z0-9_-]{0,31}$/u;
 type Decision={target:string;type:MappingRule['type'];group:FieldGroup};
 
@@ -157,14 +168,16 @@ function officialValues(suite:SuiteResult,vendor:string):number{
   return count;
 }
 
-function familyRoutedDraft(
-  source:string,candidate:ParserDraft,suite:SuiteResult,
+export function familyRoutedDraft(
+  source:string,candidate:ParserDraft,suite:SuiteResult,routing:EventFamilyRouting,
 ):{draft:ParserDraft;suite:SuiteResult;official:number}|null{
+  // A conditional mapping (`when`) already decides per event; routing it again could map one source twice.
+  if(candidate.eventProfiles||candidate.mappings.some(mapping=>mapping.when))return null;
   const families=new Map<string,number[]>();
   for(const [index,event] of suite.events.entries()){
-    const mode=lookupFieldValue(event.fields,FAMILY_DISCRIMINATOR);
-    if(!mode.found||typeof mode.value!=='string'||!FAMILY_NAME.test(mode.value))return null;
-    families.set(mode.value,[...(families.get(mode.value)??[]),index]);
+    const family=routing.familyOf(event);
+    if(family===undefined||!FAMILY_NAME.test(family))return null;
+    families.set(family,[...(families.get(family)??[]),index]);
   }
   if(families.size<2||families.size>16)return null;
   const names=[...families.keys()].sort();
@@ -213,7 +226,7 @@ function familyRoutedDraft(
     return {name,equals:name,mappings};
   });
   if(!variants.some(variant=>variant.mappings.length>0))return null;
-  const eventProfiles={discriminator:FAMILY_DISCRIMINATOR,unknown:'reject' as const,variants};
+  const eventProfiles={discriminator:routing.discriminator,unknown:'reject' as const,variants};
   if(validateEventProfiles(eventProfiles)!==null)return null;
   // One destination at most once per event: the shared outputs and the outputs of one family.
   const output=(rule:MappingRule)=>(groups[rule.id]==='vendor_fields'?'\u0000vendor.':'')+rule.target;

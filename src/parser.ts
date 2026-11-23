@@ -7,6 +7,7 @@ import {coerceCanonicalValue as convertValue} from '../backend/src/canonical-val
 import {findStellarMetadataField} from './guided/stellarMetadataCatalog';
 import {extractEvent,tokenizeCsvRow,type ExtractionSettings} from './grammar/extractEvent';
 import {gradeExtraction} from './grammar/readEvent';
+import {getTag} from './grammar/primitives';
 import type { EventBoundary } from './guided/contract';
 import {inspectDeclaredForwarders} from './guided/declaredForwarder';
 import {inspectEventProfile} from './guided/multiEventRouting';
@@ -228,6 +229,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   let fields: Record<string, unknown> = {};
   let matched = false;
   let parseStatus: EventParseStatus = 'UNKNOWN';
+  let readingFamily: string | undefined;
   if (raw.length > MAX_LINE_CHARS) {
     error('break', 'LINE_TOO_LONG', 'Event exceeds ' + MAX_LINE_CHARS + ' characters');
   } else if(new TextEncoder().encode(raw).byteLength>(draft.guided?.receiver.messageLimit??65536)){
@@ -242,6 +244,8 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     const extraction = extractFields(eventSource, effectiveFormat, draft);
     extraction.errors.forEach((message) => error('extract', 'EXTRACTION_FAILED', message));
     fields = extraction.fields;
+    const family = getTag(extraction, 'mixedFamily');
+    if (typeof family === 'string' && family) readingFamily = family;
     matched = Object.keys(fields).length > 0;
     // Parsing Success Contract: the extractor's own "no errors" is not proof. For a key=value body the
     // original line is re-read by an independent tokenizer, and a pair that is visible there but missing
@@ -275,7 +279,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     // nowhere else than in that copy (the generated Ruby decides the same, per event).
     ? {parserstudio_source:structuredClone(draft.omitSourceRaw===true&&parseStatus==='FULL'?withoutSourceRaw(fields):fields)}
     : {};
-  const family=inspectEventProfile(fields,draft.eventProfiles);
+  const family=inspectEventProfile(fields,draft.eventProfiles,readingFamily);
   if(draft.eventProfiles&&!family.profile)
     error('normalize','UNRECOGNIZED_EVENT_FAMILY',
       'Event type is missing, ambiguous or not in the reviewed family list.');
@@ -490,6 +494,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   return {
     id: 'event-' + (index + 1), line, raw, detected, effectiveFormat, fields, normalized, unmapped,
     ...(draft.eventProfiles?{eventFamily:family.name}:{}),
+    ...(readingFamily?{readingFamily}:{}),
     ...(wrapped.hops.length?{forwarderHops:wrapped.hops}:{}),
     matched, extracted: matched, normalizedOk,
     parseStatus,

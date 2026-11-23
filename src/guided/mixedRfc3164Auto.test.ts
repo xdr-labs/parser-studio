@@ -58,7 +58,15 @@ describe('P0 RFC3164 TAG KV mixed beginner+v0.2 native-reviewed bound',()=>{
   const backend=toBackendProject(prepared.draft);
   expect(backend).toMatchObject({ok:true,project:{extraction:{
    format:'mixed',mixedFormats:['json','kv','rfc3164_kv']}}});
-  const recipe=await buildReviewableRecipe(samples,prepared.draft,post);
+  // The Auto Parser routes this sample by reading family (@reading_family), so each family gets its official
+  // fields. Recipe v0.2 cannot represent per-event routing and fails closed for the routed draft; the mixed
+  // dispatch of the recipe is checked on the draft prepared with one shared mapping set.
+  expect(prepared.draft.eventProfiles?.discriminator).toBe('@reading_family');
+  expect(await buildReviewableRecipe(samples,prepared.draft,post)).toMatchObject({ok:false,reason:'COMPILER_UNSUPPORTED'});
+  const shared=prepareAutoParserDraft(samples,draft,first,ledger,assessed,{eventFamilyRouting:false});
+  if(!shared.ok)throw new Error('shared mixed draft expected');
+  expect(shared.draft.eventProfiles).toBeUndefined();
+  const recipe=await buildReviewableRecipe(samples,shared.draft,preview(samples,shared.draft));
   expect(recipe.ok).toBe(true);
   if(!recipe.ok)return;
   expect(recipe.recipe.stages[1]).toEqual({

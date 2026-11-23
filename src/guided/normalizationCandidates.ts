@@ -531,6 +531,13 @@ export function normalizationCandidateScanStatus(suite:SuiteResult|undefined):{
   return {eligiblePaths:eligible.length,limit:MAX_OFFICIAL_CANDIDATE_SCAN,
     exceeded,sourceScanTruncated,paths:exceeded?[]:eligible};
 }
+/** The grammar an event was read with: a mixed event is read by that of its family (an RFC 5424 or RFC 3164
+ * envelope holds the record under `body`, like a Syslog parser with that body), every other event by its format. */
+function readingFormat(event:SuiteResult['events'][number]):string|undefined{
+  const family=event.effectiveFormat==='mixed'?event.readingFamily:undefined;
+  if(!family)return event.effectiveFormat;
+  return family.startsWith('rfc5424_')?'syslog_rfc5424':family.startsWith('rfc3164_')?'syslog_rfc3164':family;
+}
 export function suggestNormalizationCandidatesFromSuite(
   suite:SuiteResult|undefined,existing:MappingRule[],existingGroups:Record<string,FieldGroup>={},
   options:{skipAmbiguousTargets?:boolean}={},
@@ -544,7 +551,7 @@ export function suggestNormalizationCandidatesFromSuite(
   const proposed:NormalizationCandidate[]=[];
   const candidatesByTarget=new Map<string,NormalizationCandidate[]>();
   for(const source of scan.paths){
-    const candidate=candidateForSource(source,fields,existing,existingGroups,suite.events.map(event=>event.effectiveFormat));
+    const candidate=candidateForSource(source,fields,existing,existingGroups,suite.events.map(readingFormat));
     if(!candidate)continue;
     candidatesByTarget.set(candidate.target,[...(candidatesByTarget.get(candidate.target)??[]),candidate]);
     proposed.push(candidate);

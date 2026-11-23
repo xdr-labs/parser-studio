@@ -1,5 +1,8 @@
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
 import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
+import {READING_FAMILY_DISCRIMINATOR} from '../../backend/src/canonical-operator-contract';
+
+export {READING_FAMILY_DISCRIMINATOR};
 
 export type EventProfile= {name:string;equals:string;mappings:MappingRule[]};
 export type EventProfileConfig={
@@ -9,12 +12,20 @@ const SAFE=/^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*$/;
 const FORBIDDEN=new Set(['__proto__','constructor','prototype']);
 const safe=(name:string)=>name.length>0&&name.length<=128&&SAFE.test(name)&&
   name.split('.').every(part=>!FORBIDDEN.has(part));
-export function inspectEventProfile(fields:Record<string,unknown>,config?:EventProfileConfig):
+/** The value an event has for the discriminator of a routed draft: a field of the event, or the family the
+ * mixed router read it with (@reading_family, never a field). */
+export function eventFamilyValue(event:{fields:Record<string,unknown>;readingFamily?:string},
+  discriminator:string):string|undefined{
+ if(discriminator===READING_FAMILY_DISCRIMINATOR)return event.readingFamily||undefined;
+ const selected=lookupFieldValue(event.fields,discriminator);
+ return selected.found&&typeof selected.value==='string'?selected.value:undefined;
+}
+export function inspectEventProfile(fields:Record<string,unknown>,config?:EventProfileConfig,readingFamily?:string):
  {name:string;profile:EventProfile}|{name:'UNRECOGNIZED';profile:null}{
  if(!config)return {name:'UNRECOGNIZED',profile:null};
- const selected=lookupFieldValue(fields,config.discriminator);
- if(!selected.found||typeof selected.value!=='string')return {name:'UNRECOGNIZED',profile:null};
- const matched=config.variants.filter(p=>p.equals===selected.value);
+ const value=eventFamilyValue({fields,readingFamily},config.discriminator);
+ if(value===undefined)return {name:'UNRECOGNIZED',profile:null};
+ const matched=config.variants.filter(p=>p.equals===value);
  if(matched.length!==1)return {name:'UNRECOGNIZED',profile:null};
  return {name:matched[0]!.name,profile:matched[0]!};
 }
@@ -68,7 +79,7 @@ export function suggestEventProfiles(
 }
 export function validateEventProfiles(config?:EventProfileConfig):string|null{
  if(!config)return null;
- if(!safe(config.discriminator)||config.unknown!=='reject'||
+ if(!(safe(config.discriminator)||config.discriminator===READING_FAMILY_DISCRIMINATOR)||config.unknown!=='reject'||
    config.variants.length<2||config.variants.length>16)return 'Invalid event family selector.';
  const ids=new Set<string>(),values=new Set<string>();
  for(const p of config.variants){

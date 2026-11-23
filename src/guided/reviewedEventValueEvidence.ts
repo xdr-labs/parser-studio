@@ -23,7 +23,7 @@ export function inspectReviewedEventValues(
   for(const event of suite.events){
     if(!event.extracted)return {ok:false,reason:
       'Some source events remain unparsed. Review them before approving event types.'};
-    const selected=inspectEventProfile(event.fields,draft.eventProfiles);
+    const selected=inspectEventProfile(event.fields,draft.eventProfiles,event.readingFamily);
     if(!selected.profile)return {ok:false,reason:
       'A source event does not match the selected explicit event type rules.'};
     for(const mapping of selected.profile.mappings){

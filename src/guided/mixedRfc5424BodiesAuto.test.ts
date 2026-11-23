@@ -55,7 +55,15 @@ describe('P0 strict RFC5424 JSON/KV mixed in no-code builder and reviewed Recipe
   expect(full.events[2]?.fields).toMatchObject({
    body:{src_ip:'192.0.2.19',action:'deny'},
    syslog_timestamp:'2026-10-12T01:02:03Z'});
-  const recipe=await buildReviewableRecipe(source,ready.draft,full);
+  // The Auto Parser routes this sample by reading family (@reading_family), so each family gets its official
+  // fields. Recipe v0.2 cannot represent per-event routing and fails closed for the routed draft; the mixed
+  // dispatch of the recipe is checked on the draft prepared with one shared mapping set.
+  expect(ready.draft.eventProfiles?.discriminator).toBe('@reading_family');
+  expect(await buildReviewableRecipe(source,ready.draft,full)).toMatchObject({ok:false,reason:'COMPILER_UNSUPPORTED'});
+  const shared=prepareAutoParserDraft(source,draft,initial,census,result,{eventFamilyRouting:false});
+  if(!shared.ok)throw new Error('shared mixed draft expected');
+  expect(shared.draft.eventProfiles).toBeUndefined();
+  const recipe=await buildReviewableRecipe(source,shared.draft,preview(source,shared.draft));
   expect(recipe.ok).toBe(true);
   if(!recipe.ok)return;
   expect(recipe.recipe.stages[1]).toEqual({op:'dispatch_family',

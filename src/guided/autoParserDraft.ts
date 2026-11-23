@@ -12,6 +12,9 @@ import {toBackendProject} from './backendAdapter';
 import {validManufacturerNamespace} from '../../backend/src/vendor-namespace';
 import {canonicalIgnoreSourceValue} from '../../backend/src/canonical-operator-contract';
 import {selectDraftFormat} from './draftFormatTransition';
+import {preview} from '../parser';
+import {familyRoutedDraft} from './genericStructuralAutoDraft';
+import {READING_FAMILY_DISCRIMINATOR} from './multiEventRouting';
 import {analyzeLogEnvelopes,type EnvelopeLedger,type CompilerAssessment}
   from './autoParserEnvelope';
 
@@ -24,6 +27,8 @@ const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
 export function prepareAutoParserDraft(
   source:string,draft:ParserDraft,suite:SuiteResult|undefined,
   ledger:EnvelopeLedger,compiler:CompilerAssessment,
+  /** eventFamilyRouting false keeps one shared mapping set (Recipe v0.2 cannot represent per-event routing). */
+  options:{eventFamilyRouting?:boolean}={},
 ):AutoParserDraftResult{
   const failed=(reason:Extract<AutoParserDraftResult,{ok:false}>['reason']):AutoParserDraftResult=>
     ({ok:false,reason});
@@ -164,6 +169,21 @@ export function prepareAutoParserDraft(
       const native=suggestNativeJsonType(suite,mapping);
       return native?{...mapping,type:native.type}:mapping;
     });
+    // A mixed sample holds several record families, each read by its own grammar: the same Stellar meaning sits
+    // under another source in each (CEF body.src, key=value body.srcip), and a field one family always carries
+    // is missing from the others. Deciding the official mappings over the whole sample leaves both to review
+    // (golden mixed_envelope_cef_kv: neither family got srcip, dstip, srcport, dstport). The mappings are
+    // decided inside each reading family instead and routed by it (@reading_family), as Generic Structural
+    // routes by generic.mode; the routed draft is used only when it maps strictly more official values.
+    if(next.format==='mixed'&&options.eventFamilyRouting!==false){
+      const shared=preview(source,next);
+      const routed=familyRoutedDraft(source,next,shared,{discriminator:READING_FAMILY_DISCRIMINATOR,
+        familyOf:event=>event.readingFamily});
+      if(routed){
+        next.mappings=routed.draft.mappings;next.eventProfiles=routed.draft.eventProfiles;
+        next.guided=routed.draft.guided;
+      }
+    }
   }
   // All paths must be safe for the actual R1.5 backend translator. A browser
   // preview alone must NEVER upgrade an unsupported parser into DRAFT-ready.

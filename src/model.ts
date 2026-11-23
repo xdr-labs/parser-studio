@@ -93,6 +93,8 @@ export interface EventResult {
   fields: Record<string, unknown>;
   normalized: Record<string, unknown>;
   eventFamily?: string;
+  /** The family the mixed router read the event with (src/grammar/extractEvent.ts); absent for other formats. */
+  readingFamily?: string;
   forwarderHops?: ForwarderHop[];
   unmapped: string[];
   matched: boolean;

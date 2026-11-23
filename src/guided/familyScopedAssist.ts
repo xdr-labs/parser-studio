@@ -12,7 +12,7 @@
  */
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
 import {lookupFieldValue} from '../fieldPaths';
-import {validateEventProfiles,type EventProfile} from './multiEventRouting';
+import {eventFamilyValue,validateEventProfiles,type EventProfile} from './multiEventRouting';
 import type {FieldGroup} from './contract';
 
 export const UNRECOGNIZED_SCOPE='unrecognized';
@@ -139,8 +139,7 @@ export function mergeFamilyCandidate(
   }else{
     const values=new Set(suite.events.filter(event=>!event.eventFamily||
       !profiles.variants.some(variant=>variant.name===event.eventFamily))
-      .map(event=>lookupFieldValue(event.fields,profiles.discriminator))
-      .map(found=>found.found&&typeof found.value==='string'?found.value:''));
+      .map(event=>eventFamilyValue(event,profiles.discriminator)??''));
     const [value]=[...values];
     if(values.size!==1||!value||profiles.variants.some(variant=>variant.equals===value))
       return {ok:false,reason:'NO_SINGLE_DISCRIMINATOR_VALUE'};

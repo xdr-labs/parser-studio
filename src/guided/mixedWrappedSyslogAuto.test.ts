@@ -56,7 +56,15 @@ describe('P0 mixed RFC5424-wrapped CEF/LEEF and standalone JSON in beginner path
   expect(regression.events[1]?.fields).toMatchObject({
    body:{src:'192.0.2.11',dpt:'443',act:'deny'},
   });
-  const recipe=await buildReviewableRecipe(source,prepared.draft,regression);
+  // The Auto Parser routes this sample by reading family (@reading_family), so each family gets its official
+  // fields. Recipe v0.2 cannot represent per-event routing and fails closed for the routed draft; the mixed
+  // dispatch of the recipe is checked on the draft prepared with one shared mapping set.
+  expect(prepared.draft.eventProfiles?.discriminator).toBe('@reading_family');
+  expect(await buildReviewableRecipe(source,prepared.draft,regression)).toMatchObject({ok:false,reason:'COMPILER_UNSUPPORTED'});
+  const shared=prepareAutoParserDraft(source,draft,suite,ledger,assessed,{eventFamilyRouting:false});
+  if(!shared.ok)throw new Error('shared mixed draft expected');
+  expect(shared.draft.eventProfiles).toBeUndefined();
+  const recipe=await buildReviewableRecipe(source,shared.draft,preview(source,shared.draft));
   expect(recipe.ok).toBe(true);
   if(!recipe.ok)return;
   expect(recipe.recipe.stages[1]).toEqual({

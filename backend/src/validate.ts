@@ -1,6 +1,6 @@
 import {createPortableRegex,parsePortableRegexAst,portableRegexIssue,
   portableRegexBytes,PORTABLE_REGEX_MAX_BYTES} from './portable-regex.js';
-import {supportsCanonicalClassificationOperator,validCanonicalSourcePath} from './canonical-operator-contract.js';
+import {READING_FAMILY_DISCRIMINATOR,supportsCanonicalClassificationOperator,validCanonicalSourcePath} from './canonical-operator-contract.js';
 import { Ajv } from "ajv";
 import {validManufacturerNamespace} from "./vendor-namespace.js";
 import projectSchema from "../schema/parser-project.v0.1.schema.json" with { type: "json" };
@@ -323,7 +323,15 @@ export function validateProject(input: unknown): ValidationResult {
     issue(issues, "no_fields", "/normalization", "Map at least one source field before compiling.");
   const eventProfiles = p.normalization.eventProfiles;
   if (eventProfiles) {
-    if(!validCanonicalSourcePath(eventProfiles.discriminator))
+    if(eventProfiles.discriminator===READING_FAMILY_DISCRIMINATOR){
+      // Only the mixed router has a reading family, and only an allowlisted family can be read.
+      const families=p.extraction.format==="mixed"?p.extraction.mixedFormats??[]:[];
+      if(!families.length)
+        issue(issues,'field_path_contract','/normalization/eventProfiles/discriminator','The reading family exists only for a mixed parser.');
+      for(const [index,profile] of eventProfiles.variants.entries())
+        if(!(families as readonly string[]).includes(profile.equals))
+          issue(issues,'field_path_contract','/normalization/eventProfiles/variants/'+index+'/equals','The event family is not one the mixed parser reads.');
+    }else if(!validCanonicalSourcePath(eventProfiles.discriminator))
       issue(issues,'field_path_contract','/normalization/eventProfiles/discriminator','Invalid canonical discriminator path.');
     if(eventProfiles.discriminator.split(".").some(part=>UNSAFE_PARTS.has(part)))
       issue(issues,"unsafe_field","/normalization/eventProfiles/discriminator",

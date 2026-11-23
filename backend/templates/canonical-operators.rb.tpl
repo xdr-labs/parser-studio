@@ -385,7 +385,9 @@ def parserstudio_event_profile(original)
   config = @parser_rule_set['normalization']['eventProfiles']
   return nil if config.nil?
   key = config['discriminator']
-  value = parserstudio_lookup(original, key)
+  # @reading_family routes a mixed parser by the family its router read the event with (a tag of the
+  # extraction), never by a field of the event.
+  value = key == '@reading_family' ? psg_get_tag(original, 'readingFamily') : parserstudio_lookup(original, key)
   raise ParserstudioFieldError.new(key) unless value.is_a?(String)
   profiles = config['variants'].select { |profile| profile['equals'] == value }
   raise ParserstudioFieldError.new(key) unless profiles.length == 1

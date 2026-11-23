@@ -112,6 +112,13 @@ export function evaluateCanonicalClassificationPredicate(
 const CANONICAL_PATH=/^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*$/;
 const FORBIDDEN_PATH_SEGMENTS=new Set(['__proto__','constructor','prototype']);
 
+/**
+ * Event-family discriminator of a mixed parser: the family its router read the event with (rfc5424_cef,
+ * rfc3164_kv, json ...). It is a property of the reading, carried out of band in every runtime, never a field
+ * of the event, so no source text can select a family. Only a mixed extraction has it.
+ */
+export const READING_FAMILY_DISCRIMINATOR='@reading_family';
+
 export function validCanonicalSourcePath(path:string):boolean{
   return path.length>0&&path.length<=128&&
     (path==='@timestamp'||CANONICAL_PATH.test(path))&&

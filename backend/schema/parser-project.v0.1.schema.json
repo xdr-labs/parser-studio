@@ -300,7 +300,7 @@
             "discriminator": {
               "type": "string",
               "maxLength": 128,
-              "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$"
+              "pattern": "^(?:@reading_family|[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*)$"
             },
             "unknown": {
               "const": "reject"
