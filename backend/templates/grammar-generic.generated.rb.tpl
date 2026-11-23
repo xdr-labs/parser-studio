@@ -14,6 +14,11 @@ def psg_k_grammar_owned_nodes
   @psg_k_grammar_owned_nodes ||= ['generic', 'watchguard_message', 'session_envelope', 'asa', 'juniper', 'watchguard']
 end
 
+# src/genericStructural.ts: MERAKI_RECORD_MODES
+def psg_k_meraki_record_modes
+  @psg_k_meraki_record_modes ||= {'flows' => 'meraki_flows', 'firewall' => 'meraki_firewall', 'vpn_firewall' => 'meraki_vpn_firewall', 'cellular_firewall' => 'meraki_cellular_firewall', 'bridge_anyconnect_client_vpn_firewall' => 'meraki_anyconnect_firewall', 'urls' => 'meraki_urls', 'ids-alerts' => 'meraki_ids_alerts', 'security_event' => 'meraki_security_event'}
+end
+
 # src/syslogEnvelope.ts: MONTH_DAYS
 def psg_k_month_days
   @psg_k_month_days ||= {'Jan' => 31, 'Feb' => 29, 'Mar' => 31, 'Apr' => 30, 'May' => 31, 'Jun' => 30, 'Jul' => 31, 'Aug' => 31, 'Sep' => 30, 'Oct' => 31, 'Nov' => 30, 'Dec' => 31}
@@ -639,7 +644,7 @@ def psg_extract_generic_structural(raw, profile = nil, familyGrammar = nil)
   if ((familyGrammar == 'dedicated') && psg_enveloped_json_declined(raw))
     return {'fields' => {}, 'errors' => ['The message claims to be a JSON object but the JSON body contract does not read it (not valid JSON, a repeated member name, a number that cannot be kept exactly, or the bounded size); it is not read as free text']}
   end
-  fields_3 = (psg_null?(psg_t3 = (psg_null?(psg_t4 = (psg_null?(psg_t5 = (psg_null?(psg_t6 = (psg_null?(psg_t7 = (psg_null?(psg_t8 = (psg_null?(psg_t9 = (psg_null?(psg_t10 = (psg_null?(psg_t11 = (psg_null?(psg_t12 = (psg_null?(psg_t13 = (psg_null?(psg_t14 = (psg_null?(psg_t15 = (psg_null?(psg_t16 = (psg_null?(psg_t17 = (psg_null?(psg_t18 = (psg_null?(psg_t19 = (psg_null?(psg_t20 = (psg_null?(psg_t21 = (psg_null?(psg_t22 = (psg_null?(psg_t23 = (psg_null?(psg_t24 = psg_short_rfc5424_structured(raw)) ? psg_short_rfc5424_json(raw) : psg_t24)) ? psg_prefixed_json(raw) : psg_t23)) ? psg_iso_pri_mixed(raw) : psg_t22)) ? psg_iso_pri_positional(raw) : psg_t21)) ? psg_asa(raw) : psg_t20)) ? psg_watchguard_profile(raw) : psg_t19)) ? psg_watchguard_message_profile(raw) : psg_t18)) ? psg_dual_timestamp_session_profile(raw) : psg_t17)) ? psg_bsd_bracket_pid_message_profile(raw) : psg_t16)) ? psg_juniper_legacy_profile(raw) : psg_t15)) ? psg_junos_rfc5424_sd(raw) : psg_t14)) ? psg_bracket_colon_kv(raw) : psg_t13)) ? psg_rfc3164_delimited_comma_kv(raw) : psg_t12)) ? psg_rfc3164_positional_csv(raw) : psg_t11)) ? psg_pri_space_kv(raw) : psg_t10)) ? psg_syslog_envelope_structured_fallback(raw) : psg_t9)) ? psg_comma_kv(raw) : psg_t8)) ? psg_delimited_comma_kv(raw) : psg_t7)) ? psg_space_kv(raw) : psg_t6)) ? psg_bsd_classic_pid_message_profile(raw) : psg_t5)) ? psg_bsd_tagged_message_profile(raw) : psg_t4)) ? (includesSyslog ? psg_syslog_prefixed_key_values(raw) : :psg_null) : psg_t3)
+  fields_3 = (psg_null?(psg_t3 = (psg_null?(psg_t4 = (psg_null?(psg_t5 = (psg_null?(psg_t6 = (psg_null?(psg_t7 = (psg_null?(psg_t8 = (psg_null?(psg_t9 = (psg_null?(psg_t10 = (psg_null?(psg_t11 = (psg_null?(psg_t12 = (psg_null?(psg_t13 = (psg_null?(psg_t14 = (psg_null?(psg_t15 = (psg_null?(psg_t16 = (psg_null?(psg_t17 = (psg_null?(psg_t18 = (psg_null?(psg_t19 = (psg_null?(psg_t20 = (psg_null?(psg_t21 = (psg_null?(psg_t22 = (psg_null?(psg_t23 = (psg_null?(psg_t24 = (psg_null?(psg_t25 = (psg_null?(psg_t26 = psg_short_rfc5424_structured(raw)) ? psg_short_rfc5424_json(raw) : psg_t26)) ? psg_prefixed_json(raw) : psg_t25)) ? psg_iso_pri_mixed(raw) : psg_t24)) ? psg_iso_pri_positional(raw) : psg_t23)) ? psg_asa(raw) : psg_t22)) ? psg_watchguard_profile(raw) : psg_t21)) ? psg_watchguard_message_profile(raw) : psg_t20)) ? psg_watchguard_traffic_monitor_profile(raw) : psg_t19)) ? psg_meraki_profile(raw) : psg_t18)) ? psg_dual_timestamp_session_profile(raw) : psg_t17)) ? psg_bsd_bracket_pid_message_profile(raw) : psg_t16)) ? psg_juniper_legacy_profile(raw) : psg_t15)) ? psg_junos_rfc5424_sd(raw) : psg_t14)) ? psg_bracket_colon_kv(raw) : psg_t13)) ? psg_rfc3164_delimited_comma_kv(raw) : psg_t12)) ? psg_rfc3164_positional_csv(raw) : psg_t11)) ? psg_pri_space_kv(raw) : psg_t10)) ? psg_syslog_envelope_structured_fallback(raw) : psg_t9)) ? psg_comma_kv(raw) : psg_t8)) ? psg_delimited_comma_kv(raw) : psg_t7)) ? psg_space_kv(raw) : psg_t6)) ? psg_bsd_classic_pid_message_profile(raw) : psg_t5)) ? psg_bsd_tagged_message_profile(raw) : psg_t4)) ? (includesSyslog ? psg_syslog_prefixed_key_values(raw) : :psg_null) : psg_t3)
   return (psg_t(fields_3) ? {'fields' => fields_3, 'errors' => []} : {'fields' => {}, 'errors' => ['Event does not match the bounded Generic Structural compiler grammar']})
 end
 
@@ -927,6 +932,48 @@ end
 # src/syslogEnvelope.ts: looksLikeMalformedTimestamp
 def psg_looks_like_malformed_timestamp(rest)
   return ((/\A[A-Z][a-z]{2} +[0-9]{1,2} +/.match?(rest) || /\A[0-9]{4}[\-\/:][0-9]{2}[\-\/:][0-9]{2}/.match?(rest)) || /\A[0-9]{1,3} +[0-9]{4}-[0-9]{2}-[0-9]{2}T/.match?(rest))
+end
+
+# src/genericStructural.ts: merakiProfile
+def psg_meraki_profile(raw)
+  head = kv = generic = pos = pairs = rest = label = pair = header = nil
+  if ((raw.bytesize > 8192) || raw.include?("\u{0}"))
+    return :psg_null
+  end
+  head = (/\A([0-9]{9,10}\.[0-9]{1,9}) ([A-Za-z0-9_.\-]{1,64}) (flows|firewall|vpn_firewall|cellular_firewall|bridge_anyconnect_client_vpn_firewall|urls|ids-alerts|security_event)(?: ([a-z][a-z_]{0,31}))? /.match(raw) || :psg_null)
+  if !psg_t(head)
+    return :psg_null
+  end
+  kv = {}
+  generic = {'mode' => psg_k_meraki_record_modes[head[3]], 'source_raw' => raw, 'kv' => kv}
+  pos = psg_len(head[0])
+  pairs = 0
+  while (pos < psg_len(raw))
+    rest = psg_slice(raw, pos)
+    label = (/\A(pattern|message|request): ([^\n\r\u2028\u2029]+)\z/.match(rest) || :psg_null)
+    if psg_t(label)
+      generic[label[1]] = label[2]
+      break
+    end
+    pair = (/\A([A-Za-z_][A-Za-z0-9_.\-]{0,63})=([^ ]*)(?: |\z)/.match(rest) || :psg_null)
+    if ((!psg_t(pair) || !psg_source_key_safe(pair[1])) || kv.key?(pair[1]))
+      return :psg_null
+    end
+    pairs += 1
+    if (pairs > 100)
+      return :psg_null
+    end
+    kv[pair[1]] = pair[2]
+    pos += psg_len(pair[0])
+  end
+  if (!kv['src'].is_a?(String) || !kv['dst'].is_a?(String))
+    return :psg_null
+  end
+  header = {'timestamp' => head[1], 'device' => head[2], 'record_type' => head[3]}
+  if !head[4].nil?
+    header['event_type'] = head[4]
+  end
+  return {'meraki_header' => header, 'generic' => generic}
 end
 
 # src/genericStructural.ts: panosNamedFields
@@ -2060,6 +2107,51 @@ def psg_watchguard_traffic_body(text)
     return :psg_null
   end
   return {'header' => {}.merge!((psg_t(head[1]) ? {'serial' => head[1]} : {})).merge!((psg_t(head[2]) ? {'device_time' => head[2]} : {})).merge!({'app_tag' => head[3]}), 'body' => body}
+end
+
+# src/genericStructural.ts: watchguardTrafficMonitorProfile
+def psg_watchguard_traffic_monitor_profile(raw)
+  head = details = msgId = record = header = nil
+  if ((raw.bytesize > 8192) || raw.include?("\u{0}"))
+    return :psg_null
+  end
+  head = (/\A([0-9]{4}-[0-9]{2}-[0-9]{2}) ([0-9]{2}:[0-9]{2}:[0-9]{2}) (?:([A-Za-z0-9._\-]{1,64}) )?(Allow|Deny|Drop) ([0-9A-Fa-f:.]{2,45}) ([0-9A-Fa-f:.]{2,45}) ([A-Za-z0-9._\-]{1,64})\/([A-Za-z0-9\-]{1,16}) (?:([0-9]{1,5}) ([0-9]{1,5}) )?([A-Za-z0-9._\-]{1,64}) ([A-Za-z0-9._\-]{1,64}) ([A-Za-z]{1,32}) (?:([0-9]{1,5}) ([0-9]{1,3}) )?\(([^()]{1,128})\) /.match(raw) || :psg_null)
+  if (((!psg_t(head) || !psg_iso_timestamp_ok(((head[1] + 'T') + head[2]))) || !psg_ip_token(head[5])) || !psg_ip_token(head[6]))
+    return :psg_null
+  end
+  if (!head[9].nil? && ((psg_num(head[9]) > 65535) || (psg_num(head[10]) > 65535)))
+    return :psg_null
+  end
+  if (!head[15].nil? && (psg_num(head[15]) > 255))
+    return :psg_null
+  end
+  details = psg_scan_profile_tokens(raw, psg_len(head[0]))
+  if ((!psg_t(details) || (details['tokens'].length > 0)) || (details['groups'].length > 0))
+    return :psg_null
+  end
+  msgId = details['kv']['msg_id']
+  if (!msgId.is_a?(String) || !/\A[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}\z/.match?(msgId))
+    return :psg_null
+  end
+  record = {'disp' => head[4], 'src_ip' => head[5], 'dst_ip' => head[6], 'service' => head[7], 'protocol' => head[8]}
+  if !head[9].nil?
+    record['src_port'] = head[9]
+    record['dst_port'] = head[10]
+  end
+  record['src_intf'] = head[11]
+  record['dst_intf'] = head[12]
+  record['connection_action'] = head[13]
+  if !head[14].nil?
+    record['pckt_len'] = head[14]
+    record['ttl'] = head[15]
+  end
+  record['policy'] = head[16]
+  record['kv'] = details['kv']
+  header = {'date' => head[1], 'time' => head[2]}
+  if !head[3].nil?
+    header['cluster'] = head[3]
+  end
+  return {'watchguard_header' => header, 'watchguard' => record, 'generic' => {'mode' => 'watchguard_traffic_monitor', 'source_raw' => raw}}
 end
 
 # src/genericStructural.ts: withBodyText

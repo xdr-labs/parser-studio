@@ -12,7 +12,7 @@
   "templates": {
     "canonical-operators.rb.tpl": "d42d045c794ce5e2368d34b5343a9f994582e1d34ad316a2a5fb8244644fce7a",
     "grammar-core.generated.rb.tpl": "61f8a0a0f920016e85e8357830cd30e1d7669a2060ff8de745b29b3ce2b9c813",
-    "grammar-generic.generated.rb.tpl": "1ecbe78995cda724029c1156ccd4abefdc18acfa5d4ab7a8b0d8b13936517131",
+    "grammar-generic.generated.rb.tpl": "914b00993e3289153703e060fd4702abbba4a1f9685de4ea5798a4eb9553052b",
     "grammar-runtime.rb.tpl": "52dd103857832c309524779c7dee82428e6c1406c1885d66c668b391d3191ce1",
     "ruby-fragment.rb.tpl": "73924dd9b199112009b28e8a16b1dff0146ca838cae6bc11e01ea07ef3c1f984"
   },
@@ -139,27 +139,27 @@
       "conf": "d1fbd47f99c4908158654b27110865e0c9caa80426036eaa6f9dbd3f36b8ad53"
     },
     "generic:default": {
-      "ruby": "a4a4d5b665bce3048291aef521dfe9b6544536445e48c0b662ad69a9b937fddc",
+      "ruby": "eee3e58cf4c0ac32bf57bb522f0dcdaf4014516964bcb47892e7dcc031cb440f",
       "conf": "002474f731249a175462e1e54935e32e434c96675255f1a6e34788021feeee7a"
     },
     "generic:syslog_prefix_kv": {
-      "ruby": "a4a4d5b665bce3048291aef521dfe9b6544536445e48c0b662ad69a9b937fddc",
+      "ruby": "eee3e58cf4c0ac32bf57bb522f0dcdaf4014516964bcb47892e7dcc031cb440f",
       "conf": "002474f731249a175462e1e54935e32e434c96675255f1a6e34788021feeee7a"
     },
     "generic:leef2_implicit_tab": {
-      "ruby": "a4a4d5b665bce3048291aef521dfe9b6544536445e48c0b662ad69a9b937fddc",
+      "ruby": "eee3e58cf4c0ac32bf57bb522f0dcdaf4014516964bcb47892e7dcc031cb440f",
       "conf": "002474f731249a175462e1e54935e32e434c96675255f1a6e34788021feeee7a"
     },
     "generic:syslog_prefix_kv_leef2_implicit_tab_v1": {
-      "ruby": "a4a4d5b665bce3048291aef521dfe9b6544536445e48c0b662ad69a9b937fddc",
+      "ruby": "eee3e58cf4c0ac32bf57bb522f0dcdaf4014516964bcb47892e7dcc031cb440f",
       "conf": "002474f731249a175462e1e54935e32e434c96675255f1a6e34788021feeee7a"
     },
     "generic:omit-source-raw": {
-      "ruby": "36767254a2c16c54870e73ef3f69d42e71a3c373780d59992f1363291bf5ea01",
+      "ruby": "9e1262595847fc8c12f76e836bcb69eab91b729c047c92f52202b48b4cfd3d42",
       "conf": "002474f731249a175462e1e54935e32e434c96675255f1a6e34788021feeee7a"
     },
     "generic:dedicated-families": {
-      "ruby": "a4a4d5b665bce3048291aef521dfe9b6544536445e48c0b662ad69a9b937fddc",
+      "ruby": "eee3e58cf4c0ac32bf57bb522f0dcdaf4014516964bcb47892e7dcc031cb440f",
       "conf": "002474f731249a175462e1e54935e32e434c96675255f1a6e34788021feeee7a"
     },
     "forwarder:json": {
@@ -319,7 +319,7 @@
       "conf": "79d15cd811e4797141f373fa32a33fc5d64f6c0005c2856a63402af45200e38c"
     },
     "pairwise:19:extraction=generic,forwarder=none,receiver=udp+tcp,bind=all-interfaces,classification=syslog-only,enrichment=none,event-profiles=none": {
-      "ruby": "a4a4d5b665bce3048291aef521dfe9b6544536445e48c0b662ad69a9b937fddc",
+      "ruby": "eee3e58cf4c0ac32bf57bb522f0dcdaf4014516964bcb47892e7dcc031cb440f",
       "conf": "e0efa49b1ce5f3f1a3119c823d5fa1223528987439d3a9a1a918dafadc1afb4a"
     },
     "pairwise:20:extraction=csv,forwarder=none,receiver=udp+tcp,bind=all-interfaces,classification=all-classes,enrichment=none,event-profiles=two-families": {
@@ -331,7 +331,7 @@
       "conf": "c5f4df7b1031cd549d7e95212aa71b341be2c486c53c8e82a3a30280e500d820"
     },
     "pairwise:22:extraction=generic,forwarder=none,receiver=udp,bind=loopback,classification=all-classes,enrichment=set_const,event-profiles=two-families": {
-      "ruby": "a4a4d5b665bce3048291aef521dfe9b6544536445e48c0b662ad69a9b937fddc",
+      "ruby": "eee3e58cf4c0ac32bf57bb522f0dcdaf4014516964bcb47892e7dcc031cb440f",
       "conf": "81e653aa211df87404fc2b3b8f3dcdfcf463ced44f19c795abce099f5ac8c0f9"
     },
     "pairwise:23:extraction=json,forwarder=none,receiver=tcp,bind=all-interfaces,classification=threat-default,enrichment=copy,event-profiles=none": {
@@ -375,7 +375,7 @@
       "conf": "f2ad6a67f76dfefacba2d82a0870c975b7ff8eb9d3feb949cb17e21782a327fd"
     },
     "pairwise:33:extraction=generic,forwarder=none,receiver=tcp,bind=all-interfaces,classification=threat-default,enrichment=copy,event-profiles=none": {
-      "ruby": "a4a4d5b665bce3048291aef521dfe9b6544536445e48c0b662ad69a9b937fddc",
+      "ruby": "eee3e58cf4c0ac32bf57bb522f0dcdaf4014516964bcb47892e7dcc031cb440f",
       "conf": "1ae3fd682cfbe98884c09ea3e8ee9c9b3f79e7ea8d9da37a7f23724d9a098d84"
     },
     "pairwise:34:extraction=json,forwarder=none,receiver=tcp-delimiter,bind=all-interfaces,classification=syslog-only,enrichment=split_field,event-profiles=none": {
@@ -419,7 +419,7 @@
       "conf": "5f28fb4b0411a1698035633fc26af836b8721680e2ba1be6f23dc860cde8701d"
     },
     "pairwise:44:extraction=generic,forwarder=none,receiver=tcp-delimiter,bind=all-interfaces,classification=syslog-only,enrichment=split_field,event-profiles=none": {
-      "ruby": "a4a4d5b665bce3048291aef521dfe9b6544536445e48c0b662ad69a9b937fddc",
+      "ruby": "eee3e58cf4c0ac32bf57bb522f0dcdaf4014516964bcb47892e7dcc031cb440f",
       "conf": "5e1d2a9897266c386cd7038cf5071c46aff35d17a9236de33898dd5008a71950"
     },
     "supplement:regex-without-static-cost-proof": {
@@ -427,5 +427,5 @@
       "conf": "002474f731249a175462e1e54935e32e434c96675255f1a6e34788021feeee7a"
     }
   },
-  "templateSetSha256": "e68f7f58eaf5ac5f18b8f8d72975f1cd7649fd8e891c48e3d6e872075c5c235f"
+  "templateSetSha256": "58b658c31aee7bcc08d3448669fbe7e935af7eb5f3ba81a24632400a2e165a62"
 }

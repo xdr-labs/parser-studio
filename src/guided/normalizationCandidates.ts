@@ -38,7 +38,7 @@ const SPARSE_SAFE_TARGETS=new Set(['srcip','dstip','srcport','dstport','proto','
  * container the READER of the event puts the record's own pairs in. Which containers those are follows from
  * the reading (the effective format of the events that carry the source), never from the text of the path: in
  * a JSON log `fields.srcip`, `body.srcip` or `xlate.srcip` is an object of the log and names another endpoint. */
-const GENERIC_STRUCTURAL_CONTAINER=/^(?:generic\.(?:kv|fields)|watchguard\.kv|junos_sd|body)\.[^.]+$/u;
+const GENERIC_STRUCTURAL_CONTAINER=/^(?:generic\.(?:kv|fields)|watchguard(?:\.kv)?|junos_sd|body)\.[^.]+$/u;
 const SYSLOG_BODY_CONTAINER=/^body\.[^.]+$/u;
 function recordLevelSource(source:string,formats:readonly (string|undefined)[]):boolean{
   if(!source.includes('.'))return true;
@@ -55,13 +55,22 @@ const URL_SHAPED=/^(?:[a-z][a-z0-9+.-]*:\/\/\S+|\/\S*)$/iu;
  * Security Agent packet record carries dst, spt and dpt, the Manager record of the same sample does not).
  * A record is CEF or LEEF when the container of the key holds the version the reader writes for its header
  * (cef_version, leef_version) and the event was not read as JSON, key=value or CSV, where such a name is the
- * author's own. */
-const SPEC_DEFINED_EXTENSION_KEYS:readonly {version:string;keys:Readonly<Record<string,readonly string[]>>}[]=[
+ * author's own. A documented positional layout defines its positions the same way: the WatchGuard Traffic
+ * Monitor layout (Generic Structural mode watchguard_traffic_monitor) has a source and a destination port
+ * position that an ICMP message leaves out (golden r2_watchguard_traffic). */
+const SPEC_DEFINED_EXTENSION_KEYS:readonly {version?:string;mode?:string;container?:string;
+  keys:Readonly<Record<string,readonly string[]>>}[]=[
   {version:'cef_version',keys:{src:['srcip'],dst:['dstip'],spt:['srcport'],dpt:['dstport'],
     proto:['proto','proto_name'],request:['url']}},
   {version:'leef_version',keys:{src:['srcip'],dst:['dstip'],srcPort:['srcport'],dstPort:['dstport'],
     proto:['proto','proto_name'],url:['url']}},
+  {mode:'watchguard_traffic_monitor',container:'watchguard',keys:{src_ip:['srcip'],dst_ip:['dstip'],
+    src_port:['srcport'],dst_port:['dstport']}},
 ];
+function readingMode(fields:Record<string,unknown>):unknown{
+  const mode=lookupFieldValue(fields,'generic.mode');
+  return mode.found?mode.value:undefined;
+}
 const AUTHOR_NAMED_READINGS=new Set(['json','kv','csv']);
 /** The official fields a CEF/LEEF specification assigns to the source in every event that carries it. */
 function specDefinedTargets(source:string,events:readonly Record<string,unknown>[],
@@ -73,7 +82,9 @@ function specDefinedTargets(source:string,events:readonly Record<string,unknown>
     if(!lookupFieldValue(fields,source).found)continue;
     if(AUTHOR_NAMED_READINGS.has(formats[index]||''))return [];
     const holder=container?objectAt(fields,container):fields;
-    const spec=holder?SPEC_DEFINED_EXTENSION_KEYS.find(item=>Object.prototype.hasOwnProperty.call(holder,item.version)):undefined;
+    const spec=holder?SPEC_DEFINED_EXTENSION_KEYS.find(item=>item.mode!==undefined
+      ?container===item.container&&readingMode(fields)===item.mode
+      :Object.prototype.hasOwnProperty.call(holder,item.version!)):undefined;
     const named=spec&&Object.prototype.hasOwnProperty.call(spec.keys,key)?spec.keys[key]!:[];
     if(!named.length||(targets.length&&targets!==named))return [];
     targets=named;

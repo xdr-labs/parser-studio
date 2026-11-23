@@ -345,6 +345,14 @@ assert.deepEqual(read('syslog_rfc5424',[{cef_version:'0',body:bareCef},{body:cef
 assert.deepEqual(read('cef',[bareCef,cefOther],'dst'),['REVIEW'],'no CEF version in the record of the key');
 assert.deepEqual(read('cef',[bareCef,cefRecord,cefOther],'dst'),['REVIEW'],'one record of the key without CEF version');
 assert.deepEqual(read('cef',[{...cefRecord,dst:'db01.example.com'},cefOther],'dst'),['REVIEW'],'a CEF dst that is not an address');
+// The WatchGuard Traffic Monitor layout defines its port positions; an ICMP message has none.
+const wgTcp={generic:{mode:'watchguard_traffic_monitor'},watchguard:{src_ip:'10.0.1.2',dst_ip:'100.100.100.11',protocol:'tcp',src_port:'42017',dst_port:'80',kv:{msg_id:'3000-0176'}}};
+const wgIcmp={generic:{mode:'watchguard_traffic_monitor'},watchguard:{src_ip:'10.0.1.131',dst_ip:'10.0.1.1',protocol:'icmp',kv:{msg_id:'3000-0148',type:'8'}}};
+assert.deepEqual(read('generic_structural',[wgTcp,wgIcmp],'watchguard.src_port'),['HIGH'],'WatchGuard source port position');
+assert.deepEqual(read('generic_structural',[wgTcp,wgIcmp],'watchguard.src_ip'),['HIGH'],'WatchGuard source address position');
+assert.deepEqual(read('generic_structural',[{...wgTcp,generic:{mode:'space_kv'}},{...wgIcmp,generic:{mode:'space_kv'}}],'watchguard.src_port'),['REVIEW'],'the same name in another reading');
+const wgKv={generic:{mode:'watchguard_traffic_monitor'},watchguard:{protocol:'tcp',kv:{src_port:'42017',protocol:'tcp'}}};
+assert.deepEqual(read('generic_structural',[wgKv,wgIcmp],'watchguard.kv.src_port'),['REVIEW'],'a detail pair is not the layout position');
 assert.deepEqual(mod.suggestNormalizationCandidatesFromSuite({events:[inBody,other].map(fields=>
   ({fields,effectiveFormat:'json',readingFamily:'rfc5424_kv'}))},[]).filter(r=>r.source==='body.srcip').map(r=>r.confidence),
   ['REVIEW'],'a reading family is read only for a mixed event');
