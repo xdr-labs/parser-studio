@@ -12,7 +12,7 @@ import type { EventBoundary } from './guided/contract';
 import {inspectDeclaredForwarders} from './guided/declaredForwarder';
 import {inspectEventProfile} from './guided/multiEventRouting';
 import {canonicalCaseTransform,canonicalIgnoreSourceValue} from '../backend/src/canonical-operator-contract';
-import {assignUnmapped,unmappedLeaves,unmappedOutputPath,unmappedText} from './unmappedFields';
+import {assignUnmapped,unmappedLeaves,unmappedOutputPath,unmappedText,type ReservedName} from './unmappedFields';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -377,9 +377,9 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     // A-5), and the enrichment targets inside the vendor namespace, which an unmapped field must not take (A-1).
     const occupied=[...draft.mappings,...(draft.eventProfiles?.variants.flatMap(variant=>variant.mappings)??[])]
       .filter(rule=>(draft.guided?.groups[rule.id]??'vendor_fields')==='vendor_fields')
-      .map(rule=>({target:rule.target.trim(),source:rule.sourcePathKind==='literal_root'?undefined:rule.source.trim()}))
+      .map((rule):ReservedName=>({target:rule.target.trim(),source:rule.sourcePathKind==='literal_root'?undefined:rule.source.trim()}))
       .concat((draft.guided?.enrichment??[]).map(rule=>String((rule as {target?:unknown}).target??''))
-        .filter(target=>target.startsWith(vendor+'.')).map(target=>({target:target.slice(vendor.length+1)})));
+        .filter(target=>target.startsWith(vendor+'.')).map((target):ReservedName=>({target:target.slice(vendor.length+1)})));
     for(const leaf of unmappedLeaves(fields,covered)){
       const field=leaf.path.join('.');
       const text=unmappedText(leaf.value);
