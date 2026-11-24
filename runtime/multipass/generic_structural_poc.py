@@ -1179,6 +1179,15 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
         if 'STRUCTURED_FAMILY_HEADER_UNSUPPORTED' not in standard.issues:
             standard.issues.append('STRUCTURED_FAMILY_HEADER_UNSUPPORTED')
         return standard
+    # The message of an RFC 5424 envelope claims a family the same way: a malformed CEF/LEEF message is not a parsed
+    # free-form MSG (the browser and the generated Ruby decline it; final independent audit F-4).
+    envelope=extract_rfc5424(raw)
+    if envelope is not None and envelope[1] is not None and \
+            STRUCTURED_FAMILY_CLAIM.match(raw,envelope[1]) is not None and \
+            'CEF' not in standard.syntax and 'LEEF' not in standard.syntax:
+        if 'STRUCTURED_FAMILY_HEADER_UNSUPPORTED' not in standard.issues:
+            standard.issues.append('STRUCTURED_FAMILY_HEADER_UNSUPPORTED')
+        return standard
     # Physical C0 record/control separators are not Generic Structural token
     # delimiters. A permissive Python isspace() split could otherwise turn
     # action=<RS>deny into an empty action and an unrelated token while
