@@ -47,7 +47,9 @@ test('the template hands over an event only when the shared reading is FULL',()=
   for(const template of templates){
     const body=resolvedTemplate(template);
     assert.match(body,/^  reading = psg_read_event\(psg_text\(text\), settings\)$/m);
-    assert.match(body,/^  unless reading\['status'\] == 'FULL' \|\| \(reading\['status'\] == 'PARTIAL' && settings\['format'\] == 'generic_structural'\)$/m);
+    // Besides FULL, only a Generic Structural PARTIAL reading and a PARTIAL one whose Syslog message only claims
+    // CEF/LEEF and is kept whole as text (owner decision D-2, textKept) are handed over.
+    assert.match(body,/^  unless reading\['status'\] == 'FULL' \|\| \(reading\['status'\] == 'PARTIAL' &&\n    \(settings\['format'\] == 'generic_structural' \|\| reading\['textKept'\] == true\)\)$/m);
     assert.match(body,/def psg_classify_structured_parse\(raw, outcome, bodyFormat\)/);
   }
 });

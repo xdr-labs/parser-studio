@@ -63,10 +63,16 @@ test('both Ruby templates retain path separators across KV, RFC5424 and RFC3164'
       for(const raw of [
         'src=192.0.2.10 INVALID_FRAGMENT action=deny',
         'src=192.0.2.10 action=deny INVALID_TAIL',
-        'src=192.0.2.10 __proto__=hidden',
       ])assert.equal(execute(template,raw,'kv').ok,false,name+' unsafe: '+raw);
+      // G-5 (2026-11-25) supersedes the refusal of a reserved name: it is kept under its reversible field name
+      // (src/grammar/sourceFieldNames.ts), the same in the browser and in Python.
+      const reserved=execute(template,'src=192.0.2.10 __proto__=hidden','kv');
+      assert.equal(reserved.ok,true,name+' reserved KV name');
+      assert.equal(reserved.record?.parserstudio_key___proto__,'hidden',name+' reserved KV name');
       const leef='LEEF:2.0|Vendor|Product|1.0|ID|^|src=192.0.2.10^__proto__=hidden';
-      assert.equal(execute(template,leef,'leef').ok,false,name+' unsafe LEEF');
+      const reservedLeef=execute(template,leef,'leef');
+      assert.equal(reservedLeef.ok,true,name+' reserved LEEF name');
+      assert.equal(reservedLeef.record?.parserstudio_key___proto__,'hidden',name+' reserved LEEF name');
     }
   });
 
