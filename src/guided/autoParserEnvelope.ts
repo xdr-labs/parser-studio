@@ -9,7 +9,7 @@ import {jsonSourceValueValid} from '../jsonSourceSafety';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 import {matchRfc3164Header,matchesHeaderToken} from '../grammar/syslogHeader';
 import {parseStrictKeyValues} from '../grammar/kvBody';
-import {extractStructuredFamily} from '../structuredFamilies';
+import {extractStructuredFamily,extractStandaloneFamily,priOnlyPrefix} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
 import type {BackendCapabilities} from './backendCapabilities';
 import type {EventBoundary} from './contract';
@@ -180,6 +180,11 @@ function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBou
       return {...base,envelope:'rfc5424',...classified,
         timePolicy:scanned.fields.syslog_timestamp==='-'?'NO_TIMESTAMP':'EXPLICIT_TIME'};
     }
+    // A bare PRI before a CEF or LEEF event (structuredFamilies.priOnlyPrefix) is read by the standalone CEF/LEEF
+    // reader, not by the RFC 3164 reader: there is no TIMESTAMP or HOSTNAME.
+    const pri=priOnlyPrefix(raw);
+    if(pri)return {...base,envelope:'none',body:pri.family,
+      status:extractStandaloneFamily(raw,pri.family).errors.length===0?'RECOGNIZED':'BODY_MALFORMED'};
     // RFC3164 has no year or zone. A browser hypothesis MUST NOT fabricate
     // time, a native export adapter, or a vendor-approved parsing status.
     const match=/^<(\d{1,3})>([A-Za-z]{3})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\s+([^\s]{1,255})\s+(.+)$/.exec(raw);

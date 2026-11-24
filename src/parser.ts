@@ -1,6 +1,6 @@
 import {meetsStellar7ValueConstraints,officialProtocolPairConflict} from './stellar7ValueConstraints';
 import type { ConcreteFormat, Detection, Diagnostic, EventParseStatus, EventResult, Format, ParserDraft, SuiteResult, TraceStep } from './model';
-import { detectStructuredFamily } from './structuredFamilies';
+import { detectStructuredFamily, extractStandaloneFamily, priOnlyPrefix } from './structuredFamilies';
 import { hasAmbiguousFieldPath,lookupFieldValue,mappingWhenApplies } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import {coerceCanonicalValue as convertValue} from '../backend/src/canonical-value-contract';
@@ -58,6 +58,10 @@ export function detectFormat(raw: string): Detection {
   };
   const structured = detectStructuredFamily(value);
   if (structured) return { format: structured, confidence: 0.96, reason: 'Recognized standalone structured log header' };
+  // A bare PRI before a CEF or LEEF event (structuredFamilies.priOnlyPrefix), read by the standalone CEF/LEEF reader.
+  const pri = priOnlyPrefix(value);
+  if (pri && extractStandaloneFamily(value, pri.family).errors.length === 0)
+    return { format: pri.family, confidence: 0.96, reason: 'Recognized a Syslog PRI before a standalone structured log header' };
   if (/^[{[]/.test(value)) return { format: 'json', confidence: 0.96, reason: 'Starts with JSON object or array syntax' };
   // Cisco ASA/FTD messages contain commas and key=value fragments inside the
   // free-form message body. Browser-only CSV/KV heuristics must not reinterpret

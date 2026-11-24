@@ -17,7 +17,7 @@ import { hasDuplicateJsonObjectKeys } from '../jsonDuplicateKeys';
 import { hasUnsafeJsonNumbers } from '../jsonNumberSafety';
 import { jsonSourceValueValid } from '../jsonSourceSafety';
 import { extractPortableRegexFields } from '../portableRegexExtraction';
-import { extractStructuredFamily, strictKeyValues, type StructuredExtraction } from '../structuredFamilies';
+import { extractStructuredFamily, strictKeyValues, type StructuredExtraction, extractStandaloneFamily } from '../structuredFamilies';
 import { setTag } from './primitives';
 import { matchRfc3164Header } from './syslogHeader';
 import { SYSLOG_HEADER_TOKENS } from './syslogHeaderGrammar.generated';
@@ -206,7 +206,7 @@ export function extractEvent(raw: string, settings: ExtractionSettings): Structu
   if (format === 'mixed') return extractMixed(raw, settings);
   if (format === 'syslog_rfc3164' || format === 'syslog_rfc5424')
     return extractStructuredFamily(raw, format, settings.syslogBodyFormat ?? 'raw', settings.pattern);
-  if (format === 'cef' || format === 'leef') return extractStructuredFamily(raw, format);
+  if (format === 'cef' || format === 'leef') return extractStandaloneFamily(raw, format);
   if (format === 'regex') return extractPortableRegexFields(raw, settings.pattern ?? '');
   return failure('Unsupported extraction format');
 }

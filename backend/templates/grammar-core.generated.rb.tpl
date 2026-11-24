@@ -542,7 +542,7 @@ def psg_extract_event(raw, settings)
     return psg_extract_structured_family(raw, v_format, (psg_null?(psg_t3 = settings['syslogBodyFormat']) ? 'raw' : psg_t3), settings['pattern'])
   end
   if ((v_format == 'cef') || (v_format == 'leef'))
-    return psg_extract_structured_family(raw, v_format)
+    return psg_extract_standalone_family(raw, v_format)
   end
   if (v_format == 'regex')
     return psg_x_portable_regex_fields(raw, (psg_null?(psg_t4 = settings['pattern']) ? '' : psg_t4))
@@ -617,6 +617,26 @@ def psg_extract_mixed(raw, settings)
     return psg_mixed_family(psg_extract_json_object(raw), family)
   end
   return psg_mixed_family(psg_extract_structured_family(raw, family), family)
+end
+
+# src/structuredFamilies.ts: extractStandaloneFamily
+def psg_extract_standalone_family(input, v_format)
+  prefix = text = nested = result = nil
+  prefix = psg_pri_only_prefix(input)
+  if prefix.equal?(:psg_null)
+    return psg_extract_structured_family(input, v_format)
+  end
+  if (prefix['family'] != v_format)
+    return psg_failure_2(((v_format == 'cef') ? 'A LEEF event is not a CEF event' : 'A CEF event is not a LEEF event'))
+  end
+  text = psg_slice(input, prefix['end'])
+  nested = psg_extract_structured_family(text, v_format)
+  if (nested['errors'].length > 0)
+    return nested
+  end
+  result = psg_with_body_kind({'fields' => {'syslog_pri' => prefix['pri'], 'body' => nested['fields']}, 'errors' => []}, v_format)
+  psg_set_tag(result, 'bodyText', text)
+  return result
 end
 
 # src/structuredFamilies.ts: extractStructuredFamily
@@ -1399,6 +1419,28 @@ def psg_positional_header_end(raw)
     token += 1
   end
   return psg_structured_data_end(raw, index)
+end
+
+# src/structuredFamilies.ts: priOnlyPrefix
+def psg_pri_only_prefix(input)
+  match = pri = v_end = rest = nil
+  match = (/\A<([0-9]{1,3})>[ \t]*/.match(input) || :psg_null)
+  if match.equal?(:psg_null)
+    return :psg_null
+  end
+  pri = psg_num(match[1])
+  if (pri > 191)
+    return :psg_null
+  end
+  v_end = psg_len(match[0])
+  rest = psg_slice(input, v_end)
+  if rest.start_with?('CEF:')
+    return {'pri' => pri, 'end' => v_end, 'family' => 'cef'}
+  end
+  if rest.start_with?('LEEF:')
+    return {'pri' => pri, 'end' => v_end, 'family' => 'leef'}
+  end
+  return :psg_null
 end
 
 # src/grammar/readEvent.ts: readEvent

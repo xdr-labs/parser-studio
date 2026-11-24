@@ -225,6 +225,42 @@ function parseRfc3164Strict(input:string,choice:'raw'|'json'|'kv'|'cef'|'leef'|'
  return result;
 }
 
+// A bare <PRI> before a standalone CEF or LEEF event (`<189>CEF:0|...`, FortiGate `<189>CEF: 0|...`). It is not an
+// RFC 3164 record (no TIMESTAMP, no HOSTNAME), so the RFC 3164 reader does not take it. The prefix qualifies only
+// when it is a PRI of the shared contract (token PRI, value at most priMax), blanks may follow (as in the Python
+// security envelope, PRI_HEADER), and the rest begins with the CEF or LEEF signature; the rest must then be an event
+// the CEF or LEEF grammar reads (extractStandaloneFamily).
+const PRI_ONLY_PREFIX = new RegExp('^<(' + SYSLOG_HEADER_TOKENS.PRI + ')>[ \\t]*', 'u');
+export function priOnlyPrefix(input: string): { pri: number; end: number; family: 'cef' | 'leef' } | null {
+  const match = PRI_ONLY_PREFIX.exec(input);
+  if (match === null) return null;
+  const pri = Number(match[1]);
+  if (pri > SYSLOG_HEADER_SEMANTICS.priMax) return null;
+  const end = match[0].length;
+  const rest = input.slice(end);
+  if (rest.startsWith('CEF:')) return { pri, end, family: 'cef' };
+  if (rest.startsWith('LEEF:')) return { pri, end, family: 'leef' };
+  return null;
+}
+
+/**
+ * A standalone CEF or LEEF event, optionally after a bare PRI (priOnlyPrefix). With a PRI the event is read like a
+ * Syslog envelope with a CEF/LEEF body: the PRI is the field syslog_pri and the CEF/LEEF fields are under `body`, so
+ * no extension key can collide with the PRI and the CEF/LEEF loss guard reads the body text. Bodies inside an
+ * RFC 3164 or RFC 5424 message never take this path.
+ */
+export function extractStandaloneFamily(input: string, format: 'cef' | 'leef'): StructuredExtraction {
+  const prefix = priOnlyPrefix(input);
+  if (prefix === null) return extractStructuredFamily(input, format);
+  if (prefix.family !== format) return failure(format === 'cef' ? 'A LEEF event is not a CEF event' : 'A CEF event is not a LEEF event');
+  const text = input.slice(prefix.end);
+  const nested = extractStructuredFamily(text, format);
+  if (nested.errors.length > 0) return nested;
+  const result = withBodyKind({ fields: { syslog_pri: prefix.pri, body: nested.fields }, errors: [] }, format);
+  setTag(result, 'bodyText', text);
+  return result;
+}
+
 export function extractStructuredFamily(input: string, format: StructuredFamily, bodyFormat: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex' | 'auto' = 'raw', regexPattern?:string): StructuredExtraction {
   if (input.includes('\n') || input.includes('\r')) return failure('Only one logical record per physical line is supported for pairing.');
   if (format === 'syslog_rfc3164')return parseRfc3164Strict(input,bodyFormat,regexPattern);
