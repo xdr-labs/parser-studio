@@ -241,6 +241,88 @@ it('rejects full recovery when previously unparsed text is read but not kept in 
  vi.unstubAllGlobals();
 });
 
+// Final independent re-audit of 62263b3 (2026-11-24), H-2: the real Multi-Pass evidence of these Squid lines
+// (runtime/multipass preview_batch at 62263b3, copied below) reports multi-token residual regions such as
+// " TCP_MISS/200 5120 GET ". A recipe that reads such a region into several fields keeps it; one that reads part of it
+// as literal pattern text does not.
+const SQUID='1763859723.123    245 192.0.2.51 TCP_MISS/200 5120 GET http://www.example.test/index.html - HIER_DIRECT/198.51.100.10 text/html\n'+
+ '1763859724.456     12 192.0.2.52 TCP_DENIED/403 3900 CONNECT blocked.example.test:443 alice HIER_NONE/- text/html';
+const SQUID_HOLDOUT='1763859725.789     77 192.0.2.53 TCP_HIT/200 777 GET http://cdn.example.test/a.js - HIER_NONE/- application/javascript\n'+
+ '1763859726.012      9 192.0.2.54 TCP_DENIED/407 3900 GET http://intranet.example.test/ 김민수 HIER_NONE/- text/html';
+const SQUID_VALUES=[['192.0.2.51','http://www.example.test/index.html','198.51.100.10'],['192.0.2.52']];
+const SQUID_RESIDUALS=[['1763859723.123    245 ',' TCP_MISS/200 5120 GET ',' - HIER_DIRECT/',' text/html'],
+ ['1763859724.456     12 ',' TCP_DENIED/403 3900 CONNECT blocked.example.test:443 alice HIER_NONE/- text/html']];
+const HOLDOUT_VALUES=[['192.0.2.53','http://cdn.example.test/a.js'],['192.0.2.54','http://intranet.example.test/']];
+const HOLDOUT_RESIDUALS=[['1763859725.789     77 ',' TCP_HIT/200 777 GET ',' - HIER_NONE/- application/javascript'],
+ ['1763859726.012      9 ',' TCP_DENIED/407 3900 GET ',' 김민수 HIER_NONE/- text/html']];
+function evidenceWithResiduals(source:string,values:string[][],residuals:string[][]):MultiPassBatchPreview{
+ const batch=batchEvidence(source,values);
+ const lines=source.split('\n');
+ for(const [index,event] of batch.events.entries()){
+  const raw=lines[index]!;let from=0;
+  (event.preview as unknown as {residuals:unknown[]}).residuals=(residuals[index]??[]).map(text=>{
+   const charStart=raw.indexOf(text,from);
+   if(charStart<0)throw new Error('test residual missing');
+   from=charStart+text.length;
+   const startByte=new TextEncoder().encode(raw.slice(0,charStart)).byteLength;
+   return {startByte,endByte:startByte+new TextEncoder().encode(text).byteLength};
+  });
+ }
+ return batch;
+}
+const SQUID_PATTERN=String.raw`^(?<time>\d+\.\d{3}) +(?<elapsed>\d+) (?<client>[0-9.]+) (?<code>[A-Z_]+)/(?<status>\d{3}) (?<bytes>\d+) (?<method>[A-Z]+) (?<url>\S+) (?<user>\S+) (?<hierarchy>[A-Z_]+)/(?<peer>\S+) (?<type>\S+)$`;
+async function squidReview(pattern:string,apply:(draft:import('../model').ParserDraft)=>void){
+ vi.stubGlobal('crypto',webcrypto);
+ const recipe={
+  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+  projectId:'draft-demo_firewall',sourceFormat:'regex',bodyFormat:'regex',
+  sample:{sha256:createHash('sha256').update(SQUID).digest('hex'),events:2},
+  stages:[
+   {op:'split_event',boundary:'single-line'},
+   {op:'parse_regex',pattern},
+   {op:'map_field',source:'client',target:'srcip',data_type:'ip',group:'top_fields'},
+   {op:'cast_type',target:'srcip',data_type:'ip'},
+   {op:'map_field',source:'url',target:'url',data_type:'string',group:'top_fields'},
+   {op:'map_field',source:'method',target:'method',data_type:'string',group:'vendor_fields'},
+   {op:'classify',defaultIndex:'syslog',rules:[]},
+   {op:'fallback_unparsed',mode:'retain_unparsed'},
+  ],nativeVerified:false,targetVerified:false,
+ };
+ const draft=createDraft();
+ render(<AutoParserAIReview raw={SQUID} status="partial" onChatGPT={vi.fn()}
+  source={SQUID} draft={draft} suite={preview(SQUID,draft)} onApplyCandidate={apply}
+  protectedSourceValuesByEvent={SQUID_VALUES} protectedResidualTextByEvent={SQUID_RESIDUALS}
+  holdoutEvidenceRequester={async()=>evidenceWithResiduals(SQUID_HOLDOUT,HOLDOUT_VALUES,HOLDOUT_RESIDUALS)}/>);
+ fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+ fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:SQUID_HOLDOUT}});
+ fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
+ fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
+}
+
+it('accepts a lossless recovery that reads multi-token Multi-Pass residuals into several fields (re-audit H-2)',async()=>{
+ const apply=vi.fn<(draft:import('../model').ParserDraft)=>void>();
+ await squidReview(SQUID_PATTERN,apply);
+ expect(await screen.findByText(/Fix passed: full parser recovery/)).toBeTruthy();
+ fireEvent.click(screen.getByRole('checkbox',{name:'Approve tested fix'}));
+ fireEvent.click(screen.getByRole('button',{name:'Apply Verified Fix'}));
+ await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
+ const applied=apply.mock.calls[0]![0] as Parameters<typeof preview>[1];
+ for(const line of [...SQUID.split('\n'),...SQUID_HOLDOUT.split('\n')]){
+  const text=JSON.stringify(preview(line,applied).events[0]!.normalized);
+  for(const value of line.split(/[ /]+/).filter(value=>value&&value!=='-'))expect(text,line).toContain(value);
+ }
+ vi.unstubAllGlobals();
+});
+
+it('still rejects a recovery that reads part of a multi-token residual as literal text (re-audit H-2)',async()=>{
+ const apply=vi.fn<(draft:import('../model').ParserDraft)=>void>();
+ await squidReview(SQUID_PATTERN.replace(' (?<hierarchy>[A-Z_]+)/',' HIER_(?<hierarchy>[A-Z_]+)/'),apply);
+ expect(await screen.findByText(/event 1 would leave 1 of 4 previously unparsed source regions outside the final parser output/)).toBeTruthy();
+ expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
+ expect(apply).not.toHaveBeenCalled();
+ vi.unstubAllGlobals();
+});
+
 function scalarOutput(value:unknown,out:string[]=[]):string[]{
  if(typeof value==='string')out.push(value);
  else if(Array.isArray(value))for(const item of value)scalarOutput(item,out);

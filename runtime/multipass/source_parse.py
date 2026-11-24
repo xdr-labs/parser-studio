@@ -23,8 +23,10 @@ from structured_source import (
     extract_plain_bsd,extract_apache_error,
 )
 from residual_kv import recover_kv_islands
+from syslog_header_grammar_generated import FRAGMENTS as _HEADER_FRAGMENTS
 from source_kv import decode_source_kv
 from java_source import extract_java_envelope
+_STRUCTURED_FAMILY_CLAIM=re.compile(_HEADER_FRAGMENTS['structured_family_claim']['source'])
 
 KV_AT_START=re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}=")
 JSON_ARRAY_START=re.compile(r'^\[\s*(?:[\[{}\]"0-9-]|true\b|false\b|null\b)')
@@ -163,10 +165,13 @@ def parse_source(raw:str)->SourceEvent:
             # text when the strict header is valid AND no structured decoder
             # has claimed or rejected a recognized KV/JSON/CEF/LEEF syntax.
             # Physical controls and malformed structured records stay REVIEW.
+            # A message that claims CEF or LEEF which the decoders refused is a malformed record, not free-form
+            # text: the browser and the generated Ruby decline it (final re-audit H-3, follow-up of F-4).
             if (family in ("SYSLOG_RFC5424","SYSLOG_RFC3164","BSD_SYSLOG")
                     and not outer.issues and body.status=="RAW_ONLY"
                     and body.issues==["NO_SUPPORTED_GRAMMAR"]
-                    and not body.vendor_fields):
+                    and not body.vendor_fields
+                    and _STRUCTURED_FAMILY_CLAIM.match(body.raw.lstrip("\ufeff \t")) is None):
                 rfc5424=family=="SYSLOG_RFC5424"
                 bom=1 if rfc5424 and body.raw.startswith("\ufeff") else 0
                 valid_text=(not any(control in body.raw for control in ("\r","\n","\x1e"))

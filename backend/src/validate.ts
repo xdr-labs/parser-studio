@@ -307,6 +307,11 @@ export function validateProject(input: unknown): ValidationResult {
         issue(issues,"mapping_predicate_depth",path,"Mapping condition has more than eight source path segments.");
       if (RESERVED.has(mapping.normalized_name.split(".")[0]!))
         issue(issues, "reserved_field", path, "System-managed output fields are reserved.");
+      // While fields are kept, the manufacturer name is the vendor namespace; a top or ns field may not write into it
+      // (final re-audit H-1).
+      if (keepsUnmapped && section !== "vendorFields" &&
+          (mapping.normalized_name === p.vendor || mapping.normalized_name.startsWith(p.vendor + ".")))
+        issue(issues, "reserved_field", path, "While unmapped fields are kept, the manufacturer name is the vendor namespace.");
       if (mapping.data_type === "date" && mapping.time_format !== "iso8601")
         issue(issues, "date_format", path, "Date fields require the supported iso8601 format.");
       if (mapping.data_type !== "date" && (mapping.time_format || mapping.timezone))
@@ -364,6 +369,9 @@ export function validateProject(input: unknown): ValidationResult {
           // As for the shared vendor fields (audit of 2b6602c G-1).
           if(section==="vendorFields"&&mapping.normalized_name.split(".")[0]==="parserstudio_unmapped")
             issue(issues,"reserved_field",path,"parserstudio_unmapped is reserved for fields no mapping reads.");
+          if(keepsUnmapped&&section!=="vendorFields"&&
+             (mapping.normalized_name===p.vendor||mapping.normalized_name.startsWith(p.vendor+".")))
+            issue(issues,"reserved_field",path,"While unmapped fields are kept, the manufacturer name is the vendor namespace.");
           if(mapping.data_type==="date" && mapping.time_format!=="iso8601")
             issue(issues,"date_format",path,"Date requires ISO8601.");
           if(mapping.data_type!=="date" && (mapping.time_format || mapping.timezone))

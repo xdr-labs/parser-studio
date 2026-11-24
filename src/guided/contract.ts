@@ -241,6 +241,10 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
     const group = options.groups[mapping.id] ?? 'vendor_fields';
     if (group === 'vendor_fields' && mapping.target.split('.')[0] === UNMAPPED_COLLISION_ROOT)
       errors.push('Reserved destination: ' + mapping.target);
+    const vendorRoot = draft.vendor.trim() || 'vendor';
+    if (keepsUnmapped && group !== 'vendor_fields' &&
+        (mapping.target === vendorRoot || mapping.target.startsWith(vendorRoot + '.')))
+      errors.push('Reserved destination: ' + mapping.target);
     const data_type = mapping.type === 'timestamp' ? 'date' : mapping.type;
     if (supportedTypes.includes(mapping.type)) {
       normalization[group].push({

@@ -69,5 +69,27 @@ class LeefHeaderSpacing(unittest.TestCase):
             self.assertEqual(preview(line)['status'], 'SOURCE_PARSED', line)
 
 
+class PreviewDeclinesMalformedClaimInsideSyslog(unittest.TestCase):
+    """Final re-audit H-3: the Multi-Pass preview endpoint (parse_security_multipass) read a malformed CEF/LEEF claim
+    inside an RFC 5424 message, or after an RFC 3164 header, as a parsed free-form message; the browser and the
+    generated Ruby decline it."""
+
+    def test_malformed_claims_are_not_parsed(self):
+        heads = ('<189>1 2026-11-24T00:00:00Z FGT-A-LOG app - - - ', '<189>Dec 27 11:07:55 FGT-A-LOG ')
+        for head in heads:
+            for body in ('CEF :0|A|B|1|2|n|3|src=1.1.1.1', 'CEF\t:0|A|B|1|2|n|3|src=1.1.1.1',
+                         'CEF:  0|A|B|1|2|n|3|src=1.1.1.1', 'LEEF :1.0|A|B|1|2|src=1.1.1.1'):
+                self.assertNotEqual(preview(head + body)['status'], 'SOURCE_PARSED', head + body)
+
+    def test_valid_claims_stay_parsed(self):
+        for head in ('<189>1 2026-11-24T00:00:00Z FGT-A-LOG app - - - ', '<189>Dec 27 11:07:55 FGT-A-LOG '):
+            for body in ('CEF: 0|A|B|1|2|n|3|src=1.1.1.1', 'CEF:0|A|B|1|2|n|3|src=1.1.1.1'):
+                self.assertEqual(preview(head + body)['status'], 'SOURCE_PARSED', head + body)
+
+    def test_free_text_messages_stay_parsed(self):
+        self.assertEqual(preview('<189>1 2026-11-24T00:00:00Z FGT-A-LOG app - - - service restarted')['status'],
+                         'SOURCE_PARSED')
+
+
 if __name__ == '__main__':
     unittest.main()

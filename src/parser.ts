@@ -299,7 +299,17 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       ok:true});
   }
   const mapped = new Set<string>();
+  // While fields are kept (Q3-1) the manufacturer name is the vendor namespace: a top or ns mapping never writes into
+  // it, whatever the event holds (final re-audit H-1; backend/src/validate.ts refuses the project).
+  const keptNamespace=draft.preserveUnmapped===true&&draft.format!=='generic_structural'?draft.vendor.trim()||'vendor':undefined;
   for (const mapping of [...draft.mappings,...(family.profile?.mappings??[])]) {
+    if(keptNamespace!==undefined&&(draft.guided?.groups[mapping.id]??'vendor_fields')!=='vendor_fields'){
+      const target=mapping.target.trim();
+      if(target===keptNamespace||target.startsWith(keptNamespace+'.')){
+        error('normalize','TARGET_COLLISION','While unmapped fields are kept, the manufacturer name is the vendor namespace: '+target,target);
+        continue;
+      }
+    }
     if(!mappingWhenApplies(fields,mapping.when))continue;
     const source = mapping.source.trim();
     const target = mapping.target.trim();
