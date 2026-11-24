@@ -11,6 +11,7 @@ from structured_source import decode_cef_or_leef
 from security_cef import parse_security_cef
 from source_parse import SourceEvent
 from generic_structural_poc import parse_generic_structural
+from multipass_preview_api import preview
 
 BODY = ('CEF: 0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=FGT5HD3915800610 '
         'cat=traffic:forward src=10.1.100.11 spt=54190 dst=52.53.140.235 dpt=443 proto=6 act=close')
@@ -46,6 +47,26 @@ class FortinetCefSpace(unittest.TestCase):
             self.assertNotEqual(parse_generic_structural(head + body).status, 'SOURCE_PARSED', body)
         self.assertEqual(parse_generic_structural(head + 'CEF: 0|A|B|1|2|n|3|src=1.1.1.1').status, 'SOURCE_PARSED')
         self.assertEqual(parse_generic_structural(head + 'CEF:0|A|B|1|2|n|3|src=1.1.1.1').status, 'SOURCE_PARSED')
+
+
+LEEF = ('LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=192.0.2.10^dst=172.50.123.1^sev=5^cat=anomaly^srcPort=81'
+        '^dstPort=21^usrName=joe.black')
+
+
+class LeefHeaderSpacing(unittest.TestCase):
+    """IBM QRadar LEEF guide: the header is "LEEF:Version|", with no space after the colon (audit A-6). The browser
+    journey declines these lines too (src/grammar/cefLeefHeaderForms20261124.test.ts)."""
+
+    def test_a_space_after_the_colon_is_not_leef(self):
+        spaced = LEEF.replace('LEEF:', 'LEEF: ', 1)
+        self.assertNotEqual(decode_cef_or_leef(spaced).issues, [])
+        for line in (spaced, '<111>' + spaced, '<111>Apr 19 10:29:53 3.3.3.3 ' + spaced):
+            self.assertNotEqual(preview(line)['status'], 'SOURCE_PARSED', line)
+
+    def test_the_documented_form_is_leef(self):
+        self.assertEqual(decode_cef_or_leef(LEEF).issues, [])
+        for line in (LEEF, '<111>Apr 19 10:29:53 3.3.3.3 ' + LEEF):
+            self.assertEqual(preview(line)['status'], 'SOURCE_PARSED', line)
 
 
 if __name__ == '__main__':
