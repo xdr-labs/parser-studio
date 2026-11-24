@@ -124,6 +124,7 @@ export function reconstructExactBackendDraft(
       ...(e.format==='generic_structural'&&e.omitSourceRaw===true?{omitSourceRaw:true as const}:{}),
       // An imported project keeps the CEF/LEEF route it was written with: absent means the V15 legacy route.
       ...(e.format==='generic_structural'&&e.genericStructuralFamilyGrammar==='dedicated'?{genericStructuralFamilyGrammar:'dedicated' as const}:{}),
+      ...(p.normalization.preserveUnmapped===true?{preserveUnmapped:true as const}:{}),
       mappings,
       guided:{
         ...options,

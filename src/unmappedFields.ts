@@ -17,7 +17,8 @@ import {canonicalIgnoreSourceValue} from '../backend/src/canonical-operator-cont
 export const UNMAPPED_COLLISION_ROOT='parserstudio_unmapped';
 export const UNMAPPED_IGNORED_VALUES:readonly string[]=['','N/A','-'];
 
-export interface CoveredSource{source:string;literal:boolean}
+/** kind: the mapping's sourcePathKind ('literal_root', 'nested', or undefined for the default lookup). */
+export interface CoveredSource{source:string;literal:boolean;nestedOnly?:boolean}
 export interface UnmappedLeaf{path:string[];value:unknown}
 
 const plainObject=(value:unknown):value is Record<string,unknown>=>
@@ -27,8 +28,9 @@ const plainObject=(value:unknown):value is Record<string,unknown>=>
  * arrays, empty objects and scalars are leaves. */
 export function unmappedLeaves(fields:Record<string,unknown>,covered:readonly CoveredSource[]):UnmappedLeaf[]{
   const prefixes=covered.map(item=>item.literal?[item.source]:item.source.split('.'));
-  // A nested source path also reads a literal key spelled the same ("policy.id"), as lookupFieldValue does.
-  const names=new Set(covered.filter(item=>!item.literal).map(item=>item.source));
+  // A source of the default path kind also reads a literal key spelled the same ("policy.id"), as lookupFieldValue
+  // does; a 'nested' source does not (final audit F-2: {"m.n":"10"} beside a nested m.n mapping was lost).
+  const names=new Set(covered.filter(item=>!item.literal&&!item.nestedOnly).map(item=>item.source));
   const leaves:UnmappedLeaf[]=[];
   const walk=(value:unknown,path:string[])=>{
     if(path.length&&(names.has(path.join('.'))||

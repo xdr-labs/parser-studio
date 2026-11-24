@@ -310,6 +310,9 @@ export function validateProject(input: unknown): ValidationResult {
       if (mapping.data_type !== "date" && (mapping.time_format || mapping.timezone))
         issue(issues, "date_format", path, "Time policies are only applicable to date fields.");
 
+      // The vendor namespace keeps fields no mapping reads under parserstudio_unmapped (Owner decision Q3-1).
+      if (section === "vendorFields" && mapping.normalized_name.split(".")[0] === "parserstudio_unmapped")
+        issue(issues, "reserved_field", path, "parserstudio_unmapped is reserved for fields no mapping reads.");
       const output = section === "vendorFields"
         ? `${p.vendor}.${mapping.normalized_name}` : mapping.normalized_name;
       const duplicate = destinations.find(entry => conflicts(entry.output, output));

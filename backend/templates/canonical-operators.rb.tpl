@@ -442,7 +442,8 @@ def parserstudio_preserve_unmapped(original, normalized, profile, ignored)
         next unless applies
         literal = rule['source_path_kind'] == 'literal_root'
         covered << (literal ? [source] : source.split('.', -1))
-        names << source unless literal
+        # Only the default path kind also reads a literal key of the same spelling.
+        names << source if rule['source_path_kind'].nil?
       end
     end
   end
@@ -457,8 +458,9 @@ def parserstudio_preserve_unmapped(original, normalized, profile, ignored)
     end
   end
   (@parser_rule_set['enrichment'] || []).each do |rule|
-    target = rule['target']
-    occupied << [target[(namespace.length + 1)..-1], nil] if target.is_a?(String) && target.start_with?(namespace + '.')
+    ([rule['target']] + (rule['targets'].is_a?(Array) ? rule['targets'] : [])).each do |target|
+      occupied << [target[(namespace.length + 1)..-1], nil] if target.is_a?(String) && target.start_with?(namespace + '.')
+    end
   end
   leaves = []
   parserstudio_unmapped_walk(original, [], covered, names, leaves)

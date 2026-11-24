@@ -342,6 +342,10 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       continue;
     }
     let container=normalized;
+    if(group==='vendor_fields'&&target.split('.')[0]==='parserstudio_unmapped'){
+      error('normalize','TARGET_COLLISION','parserstudio_unmapped is reserved for fields no mapping reads: '+target,target);
+      continue;
+    }
     if(group==='vendor_fields'){
       const vendor=draft.vendor.trim()||'vendor';
       if(RUNTIME_OUTPUT_ROOTS.has(vendor)){
@@ -371,15 +375,18 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   if(draft.preserveUnmapped===true&&draft.format!=='generic_structural'&&matched){
     const active=[...draft.mappings,...(family.profile?.mappings??[])];
     const covered=active.filter(rule=>mappingWhenApplies(fields,rule.when))
-      .map(rule=>({source:rule.source.trim(),literal:rule.sourcePathKind==='literal_root'}));
+      .map(rule=>({source:rule.source.trim(),literal:rule.sourcePathKind==='literal_root',
+        nestedOnly:rule.sourcePathKind==='nested'}));
     const vendor=draft.vendor.trim()||'vendor';
     // Reserved names: the vendor fields of every family, so that one source keeps one name in every event (audit
     // A-5), and the enrichment targets inside the vendor namespace, which an unmapped field must not take (A-1).
     const occupied=[...draft.mappings,...(draft.eventProfiles?.variants.flatMap(variant=>variant.mappings)??[])]
       .filter(rule=>(draft.guided?.groups[rule.id]??'vendor_fields')==='vendor_fields')
       .map((rule):ReservedName=>({target:rule.target.trim(),source:rule.sourcePathKind==='literal_root'?undefined:rule.source.trim()}))
-      .concat((draft.guided?.enrichment??[]).map(rule=>String((rule as {target?:unknown}).target??''))
-        .filter(target=>target.startsWith(vendor+'.')).map((target):ReservedName=>({target:target.slice(vendor.length+1)})));
+      .concat((draft.guided?.enrichment??[]).flatMap(rule=>{
+        const {target,targets}=rule as {target?:unknown;targets?:unknown};
+        return [target,...(Array.isArray(targets)?targets:[])].filter((item):item is string=>typeof item==='string');
+      }).filter(target=>target.startsWith(vendor+'.')).map((target):ReservedName=>({target:target.slice(vendor.length+1)})));
     for(const leaf of unmappedLeaves(fields,covered)){
       const field=leaf.path.join('.');
       const text=unmappedText(leaf.value);

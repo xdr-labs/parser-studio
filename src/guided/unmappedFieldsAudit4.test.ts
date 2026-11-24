@@ -6,6 +6,8 @@ import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import type {BackendCapabilities} from './backendCapabilities';
+import {toBackendProject} from './backendAdapter';
+import {reconstructExactBackendDraft} from './pairProjectImport';
 
 // Repro tests of the fourth independent audit (7874969, 2026-11-24). SYNTHETIC lines, except FGT (golden
 // fortinet_cef, PUBLISHER_ORIGINAL).
@@ -82,5 +84,38 @@ describe('A-3: a malformed CEF claim is declined by Generic Structural, never re
     const draft=built?.draft??createDraft();
     const [event]=preview(FGT.replace('CEF: 0|',spelling),draft).events;
     expect(event!.parseStatus).not.toBe('FULL');
+  });
+});
+
+// Final independent audit (adf8d3d). SYNTHETIC lines.
+describe('final audit F-1, F-2, F-3, F-5',()=>{
+  const sample=['srcip=10.1.1.1 dstip=10.2.2.2 action=allow user=bob','srcip=10.1.1.3 dstip=10.2.2.4 action=deny user=amy'].join('\n');
+  it('F-1: reserves the outputs of a split enrichment',()=>{
+    const base=journey(sample);
+    const draft:ParserDraft={...base,vendor:'acme',guided:{...base.guided!,
+      enrichment:[{operator:'split_field',source:'action',delimiter:'_',targets:['acme.o1','acme.o2']}] as never}};
+    const [event]=preview('srcip=10.1.1.5 dstip=10.2.2.6 action=al_low user=carl o1=zzz',draft).events;
+    expect(event!.normalizedOk,JSON.stringify(event!.diagnostics)).toBe(true);
+    expect(JSON.stringify(event!.normalized)).toContain('"zzz"');
+  });
+  it('F-2: a nested-kind mapping does not take a literal dotted key',()=>{
+    const base=journey(['{"srcip":"10.1.1.1","dstip":"10.2.2.2","action":"allow"}','{"srcip":"10.1.1.3","dstip":"10.2.2.4","action":"deny"}'].join('\n'));
+    const draft:ParserDraft={...base,mappings:[...base.mappings,{id:'mn',source:'m.n',target:'mn',type:'string',
+      sourcePathKind:'nested',authoring:{version:1,origin:'AUTO'}}]};
+    const [event]=preview('{"srcip":"10.1.1.5","dstip":"10.2.2.6","action":"allow","m.n":"10"}',draft).events;
+    expect(JSON.stringify(event!.normalized)).toContain('"10"');
+  });
+  it('F-3: an Auto Parser project imports back exactly',()=>{
+    const converted=toBackendProject(journey(sample));
+    expect(converted.ok).toBe(true);
+    if(!converted.ok)return;
+    const restored=reconstructExactBackendDraft(converted.project,'customized_'+converted.project.slug);
+    expect(restored).not.toBeNull();
+  });
+  it('F-5: a mapping may not write the reserved parserstudio_unmapped object',()=>{
+    const base=journey(sample);
+    const draft:ParserDraft={...base,mappings:base.mappings.map(rule=>rule.source==='user'?{...rule,target:'parserstudio_unmapped'}:rule)};
+    const [event]=preview('srcip=10.1.1.5 dstip=10.2.2.6 action=allow user=carl',draft).events;
+    expect(event!.diagnostics.map(item=>item.code)).toContain('TARGET_COLLISION');
   });
 });
