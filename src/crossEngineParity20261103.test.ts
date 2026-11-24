@@ -44,13 +44,20 @@ describe('2026-11-03 reviewed original-source losslessness contracts',()=>{
       expect(analyzeLogEnvelopes(raw,'single-line').events[0]?.status).toBe('BODY_MALFORMED');
     }
   });
-  it.each(['__proto__','prototype','constructor'])('rejects unsafe source field %s in KV and LEEF',key=>{
+  // G-5 (2026-11-25) supersedes the refusal: a source field the JavaScript object model reserves is kept under its
+  // reversible name (src/grammar/sourceFieldNames.ts) and never written as an object property of that name.
+  it.each(['__proto__','prototype','constructor'])('keeps unsafe source field %s in KV and LEEF under its reversible name',key=>{
     const draft=createDraft();draft.format='kv';
     const kv='action=deny '+key+'=hidden src_ip=192.0.2.10';
-    expect(extractFields(kv,'kv',draft).errors.length).toBeGreaterThan(0);
-    expect(analyzeLogEnvelopes(kv,'single-line').events[0]?.status).toBe('BODY_MALFORMED');
-    const leef='LEEF:2.0|Vendor|Product|1.0|ID101|^|src=192.0.2.10^'+key+'=hidden^action=deny';
-    expect(extractFields(leef,'leef',draft).errors.length).toBeGreaterThan(0);
+    for(const read of [extractFields(kv,'kv',draft),
+      extractFields('LEEF:2.0|Vendor|Product|1.0|ID101|^|src=192.0.2.10^'+key+'=hidden^action=deny','leef',draft)]){
+      expect(read.errors).toEqual([]);
+      expect(read.fields['parserstudio_key_'+key]).toBe('hidden');
+      expect(Object.prototype.hasOwnProperty.call(read.fields,key)).toBe(false);
+      expect([read.fields.src_ip??read.fields.src,read.fields.action]).toEqual(['192.0.2.10','deny']);
+    }
+    expect(analyzeLogEnvelopes(kv,'single-line').events[0]?.status).toBe('RECOGNIZED');
+    expect(({} as Record<string,unknown>).hidden).toBeUndefined();
   });
   it('keeps regular CEF and LEEF event family extraction intact',()=>{
     expect(extractStructuredFamily('CEF:0|Vendor|Product|1.0|ID|Blocked|5|src=192.0.2.10 msg=File blocked act=deny','cef').fields)

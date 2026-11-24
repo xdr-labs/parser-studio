@@ -70,9 +70,9 @@ function jsonValid(input:string):boolean{
         return leaves<=4096;
       }
       if(Array.isArray(node))return node.every(item=>descend(item,depth+1));
-      return Object.entries(node).every(([name,item])=>
-        name!=='__proto__'&&name!=='constructor'&&name!=='prototype'&&
-        descend(item,depth+1));
+      // A member name the JavaScript object model reserves is read under its reversible field name
+      // (src/grammar/sourceFieldNames.ts, G-5), so it no longer makes the JSON body malformed.
+      return Object.values(node).every(item=>descend(item,depth+1));
     };
     return descend(value,0);
   }catch{return false;}

@@ -124,7 +124,9 @@ export function generateKvBodyCases(count: number, seed: number): OracleCase[] {
     // Owner policy D-1: the first field is written again at the end with another value.
     add('duplicate-key', renderBody([...pairs, { ...pairs[0]!, value: 'again', text: 'again' }], () => ' '),
       { status: 'UNKNOWN', event: null, repeated: { [pairs[0]!.key]: [pairs[0]!.value, 'again'] } });
-    add('forbidden-key', renderBody([...pairs, { key: '__proto__', value: '1', text: '1' }], () => ' '), UNKNOWN);
+    // G-5 (2026-11-25): a reserved name is read under its reversible field name (src/grammar/sourceFieldNames.ts).
+    add('reserved-key', renderBody([...pairs, { key: '__proto__', value: '1', text: '1' }], () => ' '),
+      full([...pairs, { key: 'parserstudio_key___proto__', value: '1', text: '1' }]));
     add('token-without-equals', renderBody(pairs, at => (at === 1 ? ' stray ' : ' ')), UNKNOWN);
     add('unterminated-quote', renderBody(pairs, () => ' ') + ' tail="never closed', UNKNOWN);
     // Issue #214: U+001C..U+001F are information separators, never part of a bare value and never a pair separator.

@@ -18,6 +18,7 @@ from __future__ import annotations
 import re
 from structured_source import Fragment
 from syslog_header_grammar_generated import FRAGMENTS,SEMANTICS,TOKENS,KV_ASCII_WHITESPACE
+from source_field_names import source_field_name
 
 PAIR=re.compile(FRAGMENTS['kv_pair']['source'])
 LIST_PAIR=re.compile(FRAGMENTS['kv_list_pair']['source'])
@@ -126,9 +127,8 @@ def decode_source_kv(raw:str,begin:int=0,*,max_fields:int=MAX_FIELDS)->Fragment:
         match=(LIST_PAIR if listed else PAIR).match(raw,pos)
         if match is None or match.end()<=pos:
             out.issues.append(_diagnose(raw,pos));break
-        key=match['key']
-        if key in UNSAFE:
-            out.issues.append('KV_UNSAFE_SOURCE_KEY');break
+        # A name the JavaScript object model reserves is kept under its reversible field name (G-5).
+        key=source_field_name(match['key'])
         if out.primitive_fields>=max_fields:
             out.issues.append('KV_SOURCE_FIELD_LIMIT');break
         group=next(name for name in ('dq','sq','bare') if match[name] is not None)

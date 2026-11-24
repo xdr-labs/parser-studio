@@ -15,6 +15,7 @@ import math
 import re
 from syslog_header_grammar_generated import KV_ASCII_WHITESPACE
 from typing import Any
+from source_field_names import source_field_name
 
 MAX_RAW_BYTES = 131072
 MAX_CAPTURED_FIELDS = 4096
@@ -180,8 +181,13 @@ class SpanJsonDecoder:
                     self.whitespace()
                     if self.raw[self.i:self.i+1]!='"':
                         raise ValueError("JSON_KEY_INVALID")
-                    key,self.i=DEC.raw_decode(self.raw,self.i)
-                    if not isinstance(key,str) or key in out or key in {"__proto__","constructor","prototype"}:
+                    name,self.i=DEC.raw_decode(self.raw,self.i)
+                    if not isinstance(name,str):
+                        raise ValueError("JSON_DUPLICATE_OR_UNSAFE_KEY")
+                    # A name the JavaScript object model reserves is kept under its reversible field name (G-5);
+                    # the mapping is injective, so a duplicate stays a duplicate.
+                    key=source_field_name(name)
+                    if key in out:
                         raise ValueError("JSON_DUPLICATE_OR_UNSAFE_KEY")
                     if _has_unpaired_surrogate(key):
                         raise ValueError("JSON_UNPAIRED_SURROGATE")

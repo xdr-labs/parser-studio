@@ -79,12 +79,17 @@ class ContractKeyValueScanner(unittest.TestCase):
         found = decode_source_kv('note="hello world"dstip=8.8.8.8')
         self.assertEqual(({"note": "hello world", "dstip": "8.8.8.8"}, []), (found.fields, found.issues))
 
+    def test_reserved_names_are_read_under_their_reversible_field_names(self):
+        # G-5 (2026-11-25) supersedes KV_UNSAFE_SOURCE_KEY (runtime/multipass/source_field_names.py).
+        found = decode_source_kv("a=1 __proto__=2")
+        self.assertEqual([], found.issues)
+        self.assertEqual({"a": "1", "parserstudio_key___proto__": "2"}, found.fields)
+
     def test_malformed_bodies_are_declined_and_keep_the_tail_raw(self):
         declined = {
             "a=1 stray b=2": "KV_TOKEN_UNRECOGNIZED",
             'a=1 tail="never closed': "KV_QUOTE_UNCLOSED",
             "a=1 b= c=3": "KV_EMPTY_UNQUOTED_VALUE",
-            "a=1 __proto__=2": "KV_UNSAFE_SOURCE_KEY",
             "a=1 b=x\"y": "KV_TOKEN_UNRECOGNIZED",
         }
         for body, issue in declined.items():

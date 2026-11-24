@@ -16,6 +16,7 @@
 export type ParseStatus = 'FULL' | 'PARTIAL' | 'UNKNOWN' | 'ERROR';
 
 import { getTag, matchAt, matchEnd } from './primitives';
+import { sourceFieldName } from './sourceFieldNames';
 
 export interface StructuredOutcome { fields: Record<string, unknown>; errors: string[] }
 export interface RawPair { key: string; value: string; rawValue: string; quoted: boolean }
@@ -259,13 +260,15 @@ export function classifyStructuredParse(
     // An unquoted value has no escapes: the field holds the text as written, or the value was changed on the
     // way (a decoded backslash is a lost character). Which backslashes a grammar decodes in a QUOTED value is
     // the grammar's business; there presence of the value is accounted, compared with backslashes removed.
-    const values = leaves.get(pair.key) ?? [];
-    const consumed = taken.get(pair.key) ?? new Set<number>();
+    // The field of a pair is kept under the pair's field name (sourceFieldNames.ts, G-5).
+    const field = sourceFieldName(pair.key);
+    const values = leaves.get(field) ?? [];
+    const consumed = taken.get(field) ?? new Set<number>();
     const at = values.findIndex((value, index) => !consumed.has(index) &&
       (pair.quoted ? value === pair.value || value === pair.rawValue || value.split('\\').join('') === pair.rawValue.split('\\').join('') : value === pair.rawValue));
     if (at < 0) return true;
     consumed.add(at);
-    taken.set(pair.key, consumed);
+    taken.set(field, consumed);
     return false;
   });
   if (lostPairs.length > 0 || headerReasons.length > 0) {

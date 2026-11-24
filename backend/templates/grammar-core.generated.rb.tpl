@@ -39,16 +39,6 @@ def psg_k_csv_delimiters
   @psg_k_csv_delimiters ||= [',', ';', "\u{9}"]
 end
 
-# src/grammar/kvBody.ts: FORBIDDEN
-def psg_k_forbidden
-  @psg_k_forbidden ||= ['__proto__', 'constructor', 'prototype']
-end
-
-# src/structuredFamilies.ts: FORBIDDEN_KEYS
-def psg_k_forbidden_keys
-  @psg_k_forbidden_keys ||= ['__proto__', 'constructor', 'prototype']
-end
-
 # src/grammar/lossGuard.ts: JSON_ESCAPES
 def psg_k_json_escapes
   @psg_k_json_escapes ||= {'"' => '"', '\\' => '\\', '/' => '/', 'b' => "\u{8}", 'f' => "\u{c}", 'n' => "\u{a}", 'r' => "\u{d}", 't' => "\u{9}"}
@@ -82,6 +72,11 @@ end
 # src/grammar/extractEvent.ts: MIXED_FAMILIES
 def psg_k_mixed_families
   @psg_k_mixed_families ||= ['json', 'kv', 'cef', 'leef', 'rfc5424_cef', 'rfc5424_leef', 'rfc3164_kv', 'rfc5424_json', 'rfc5424_kv', 'rfc3164_cef', 'rfc3164_leef', 'csv']
+end
+
+# src/grammar/sourceFieldNames.ts: RESERVED
+def psg_k_reserved
+  @psg_k_reserved ||= ['__proto__', 'constructor', 'prototype']
 end
 
 # src/grammar/syslogHeaderGrammar.generated.ts: SYSLOG_HEADER_ALTERNATIVES
@@ -126,7 +121,7 @@ def psg_bounded_json_object(text)
     if !psg_json_source_value_valid(parsed)
       return psg_failure_2('RFC5424 JSON body exceeds native nesting depth or contains invalid Unicode')
     end
-    return {'fields' => parsed, 'errors' => []}
+    return {'fields' => psg_with_source_field_names(parsed), 'errors' => []}
   rescue StandardError
     return psg_failure_2('RFC5424 JSON body is not valid JSON')
   end
@@ -168,7 +163,7 @@ def psg_cef_event_unaccounted(text, fields)
       return 'text of the CEF extension is not part of any extracted field'
     end
     cursor += 1
-    value = (psg_k_cef_header_fields.include?(key) ? nil : fields[key])
+    value = (psg_k_cef_header_fields.include?(key) ? nil : fields[psg_source_field_name(key)])
     if !value.is_a?(String)
       return 'a key=value pair of the CEF extension is missing from the extracted fields'
     end
@@ -237,10 +232,7 @@ def psg_cef_extension_values(input)
     if (((count += 1) - 1) >= 1024)
       return psg_failure_2('CEF extension field limit exceeded')
     end
-    key = psg_group(match, 'key')
-    if psg_k_forbidden_keys.include?(key)
-      return psg_failure_2('Unsupported CEF extension field')
-    end
+    key = psg_source_field_name(psg_group(match, 'key'))
     if values.key?(key)
       return psg_failure_2(psg_duplicate_field_message(key))
     end
@@ -279,15 +271,16 @@ def psg_classify_structured_parse(raw, outcome, bodyFormat)
   psg_collect_leaves(scope, '', leaves)
   taken = {}
   lostPairs = psg_filter(psg_independent_key_value_pairs(raw), lambda { |pair|
-  values = consumed = at = nil
-  values = (psg_null?(psg_t1 = leaves[pair['key']]) ? [] : psg_t1)
-  consumed = (psg_null?(psg_t2 = taken[pair['key']]) ? {} : psg_t2)
+  field = values = consumed = at = nil
+  field = psg_source_field_name(pair['key'])
+  values = (psg_null?(psg_t1 = leaves[field]) ? [] : psg_t1)
+  consumed = (psg_null?(psg_t2 = taken[field]) ? {} : psg_t2)
   at = psg_find_index(values, lambda { |value, index| (!consumed.key?(index) && (pair['quoted'] ? (((value == pair['value']) || (value == pair['rawValue'])) || (psg_join(psg_split(value, '\\'), '') == psg_join(psg_split(pair['rawValue'], '\\'), ''))) : (value == pair['rawValue']))) })
   if (at < 0)
     return true
   end
   consumed[at] = true
-  taken[pair['key']] = consumed
+  taken[field] = consumed
   return false
 })
   if ((lostPairs.length > 0) || (headerReasons.length > 0))
@@ -420,7 +413,7 @@ def psg_count_json_value_tokens(value, counts)
   end
   if (!value.equal?(:psg_null) && (psg_typeof(value) == 'object'))
     psg_entries(value).each do |(name, item_2)|
-      psg_bump(counts, ('s:' + name), (-1))
+      psg_bump(counts, ('s:' + psg_original_field_name(name)), (-1))
       psg_count_json_value_tokens(item_2, counts)
     end
     return nil
@@ -567,7 +560,7 @@ def psg_extract_json_object(raw)
     if !psg_json_source_value_valid(parsed)
       return psg_failure('JSON source exceeds the native nesting limit or has an invalid Unicode surrogate')
     end
-    result = {'fields' => parsed, 'errors' => []}
+    result = {'fields' => psg_with_source_field_names(parsed), 'errors' => []}
     psg_set_tag(result, 'bodyKind', 'json')
     return result
   rescue StandardError
@@ -641,7 +634,7 @@ end
 
 # src/structuredFamilies.ts: extractStructuredFamily
 def psg_extract_structured_family(input, v_format, bodyFormat = nil, regexPattern = nil)
-  scanned = body = bodyKind = mode = nested = result = match = parts = record = extension = match_2 = carriesDelimiter = headerFields = parts_2 = delimiter = record_2 = attribute = key = nil
+  scanned = body = bodyKind = mode = nested = result = match = parts = record = extension = match_2 = carriesDelimiter = headerFields = parts_2 = delimiter = record_2 = attribute = name = key = nil
   bodyFormat = 'raw' if bodyFormat.nil?
   if (input.include?("\u{a}") || input.include?("\u{d}"))
     return psg_failure_2('Only one logical record per physical line is supported for pairing.')
@@ -719,10 +712,11 @@ def psg_extract_structured_family(input, v_format, bodyFormat = nil, regexPatter
   if psg_t(psg_at(parts_2, (parts_2.length - 1)))
     psg_split(psg_at(parts_2, (parts_2.length - 1)), delimiter).each do |part|
       attribute = psg_match_at(/\G(?:(?<key>[A-Za-z_][A-Za-z0-9_.\-]*)=)/, part, 0)
-      key = psg_group(attribute, 'key')
-      if ((!psg_t(attribute) || key.nil?) || psg_k_forbidden_keys.include?(key))
+      name = psg_group(attribute, 'key')
+      if (!psg_t(attribute) || name.nil?)
         return psg_failure_2('Unsupported LEEF extension token')
       end
+      key = psg_source_field_name(name)
       if record_2.key?(key)
         return psg_failure_2(psg_duplicate_field_message(key))
       end
@@ -1143,7 +1137,7 @@ def psg_leef_event_unaccounted(text, fields)
       return 'text of the LEEF extension is not part of any extracted attribute'
     end
     cursor += 1
-    value = (psg_k_leef_header_fields.include?(key) ? nil : fields[key])
+    value = (psg_k_leef_header_fields.include?(key) ? nil : fields[psg_source_field_name(key)])
     if !value.is_a?(String)
       return 'an attribute of the LEEF extension is missing from the extracted fields'
     end
@@ -1263,6 +1257,24 @@ def psg_mixed_family(result, family)
   return result
 end
 
+# src/grammar/sourceFieldNames.ts: needsRenaming
+def psg_needs_renaming(value)
+  record = nil
+  if value.is_a?(Array)
+    return psg_some(value, method(:psg_needs_renaming))
+  end
+  if (value.equal?(:psg_null) || !(psg_typeof(value) == 'object'))
+    return false
+  end
+  record = value
+  return psg_some(record.keys, lambda { |name| ((psg_source_field_name(name) != name) || psg_needs_renaming(record[name])) })
+end
+
+# src/grammar/sourceFieldNames.ts: originalFieldName
+def psg_original_field_name(name)
+  return (name.start_with?('parserstudio_key_') ? psg_slice(name, 17) : name)
+end
+
 # src/javaStacktrace.ts: parseJavaStacktrace
 def psg_parse_java_stacktrace(text)
   lines = head = frames = causes = root = last = matched = nil
@@ -1373,10 +1385,7 @@ def psg_parse_strict_key_values(input)
     if (!psg_t(match) || (psg_match_end(match) <= cursor))
       return {'ok' => false, 'reason' => 'MALFORMED_PAIR'}
     end
-    key = psg_group(match, 'key')
-    if psg_k_forbidden.include?(key)
-      return {'ok' => false, 'reason' => 'FORBIDDEN_KEY', 'key' => key}
-    end
+    key = psg_source_field_name(psg_group(match, 'key'))
     if seen.key?(key)
       return {'ok' => false, 'reason' => 'DUPLICATE_KEY', 'key' => key}
     end
@@ -1506,6 +1515,23 @@ end
 # src/structuredFamilies.ts: regexBody
 def psg_regex_body(message, pattern = nil)
   return psg_x_portable_regex_fields(message, (psg_null?(psg_t1 = pattern) ? '' : psg_t1))
+end
+
+# src/grammar/sourceFieldNames.ts: renamed
+def psg_renamed(value)
+  record = out = nil
+  if value.is_a?(Array)
+    return psg_map(value, method(:psg_renamed))
+  end
+  if (value.equal?(:psg_null) || !(psg_typeof(value) == 'object'))
+    return value
+  end
+  record = value
+  out = {}
+  record.keys.each do |name|
+    out[psg_source_field_name(name)] = psg_renamed(record[name])
+  end
+  return out
 end
 
 # src/grammar/lossGuard.ts: rowUnaccounted
@@ -1708,6 +1734,11 @@ def psg_single_envelope(raw)
     return :psg_null
   end
   return {'host' => parsed_2['fields']['syslog_hostname'], 'timestamp' => parsed_2['fields']['syslog_timestamp'], 'format' => 'rfc3164', 'payload' => parsed_2['fields']['message']}
+end
+
+# src/grammar/sourceFieldNames.ts: sourceFieldName
+def psg_source_field_name(name)
+  return ((psg_k_reserved.include?(name) || name.start_with?('parserstudio_key_')) ? ('parserstudio_key_' + name) : name)
 end
 
 # src/structuredFamilies.ts: splitEscaped
@@ -1952,6 +1983,11 @@ def psg_with_body_kind(extraction, kind = nil)
     psg_set_tag(extraction, 'bodyKind', kind)
   end
   return extraction
+end
+
+# src/grammar/sourceFieldNames.ts: withSourceFieldNames
+def psg_with_source_field_names(value)
+  return (psg_needs_renaming(value) ? psg_renamed(value) : value)
 end
 
 # src/grammar/extractEvent.ts: withoutEdgeBlanks

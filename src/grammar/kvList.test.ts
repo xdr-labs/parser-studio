@@ -48,7 +48,8 @@ describe('key=value pairs separated by a list delimiter', () => {
 
   it('declines a list under the same rules as any key=value body', () => {
     expect(pairs('a=1,b=2,a=3')).toBe('DUPLICATE_KEY');
-    expect(pairs('a=1,__proto__=2')).toBe('FORBIDDEN_KEY');
+    // G-5: a reserved name is read under its reversible field name, in a list too.
+    expect(pairs('a=1,__proto__=2')).toEqual([['a', '1'], ['parserstudio_key___proto__', '2']]);
     expect(pairs(Array.from({ length: 100 }, (_unused, at) => 'f' + at + '=' + at).join(','))).toHaveLength(100);
     expect(pairs(Array.from({ length: 101 }, (_unused, at) => 'f' + at + '=' + at).join(','))).toBe('TOO_MANY_PAIRS');
   });

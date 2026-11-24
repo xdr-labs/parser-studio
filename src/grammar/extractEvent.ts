@@ -21,6 +21,7 @@ import { extractStructuredFamily, strictKeyValues, type StructuredExtraction, ex
 import { setTag } from './primitives';
 import { matchRfc3164Header } from './syslogHeader';
 import { SYSLOG_HEADER_TOKENS } from './syslogHeaderGrammar.generated';
+import { withSourceFieldNames } from './sourceFieldNames';
 
 /** The `extraction` object of a compiled parser project (backend/src/types.ts), as far as the grammar reads it. */
 export interface ExtractionSettings {
@@ -46,7 +47,8 @@ export function extractJsonObject(raw: string): StructuredExtraction {
     if (hasDuplicateJsonObjectKeys(raw)) return failure('Duplicate JSON object key: review the source before generating a parser');
     if (hasUnsafeJsonNumbers(raw)) return failure('Unsafe JSON numeric precision: quote large integer identifiers as strings before mapping');
     if (!jsonSourceValueValid(parsed)) return failure('JSON source exceeds the native nesting limit or has an invalid Unicode surrogate');
-    const result: StructuredExtraction = { fields: parsed as Record<string, unknown>, errors: [] };
+    // Member names the JavaScript object model reserves are kept under their reversible field names (G-5).
+    const result: StructuredExtraction = { fields: withSourceFieldNames(parsed) as Record<string, unknown>, errors: [] };
     setTag(result, 'bodyKind', 'json');
     return result;
   } catch {

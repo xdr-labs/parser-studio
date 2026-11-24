@@ -13,6 +13,7 @@
  * the same code (scripts/grammar/ts2rb), so an event is graded identically in both.
  */
 import { SYSLOG_HEADER_SEMANTICS, SYSLOG_HEADER_TOKENS } from './syslogHeaderGrammar.generated';
+import { originalFieldName, sourceFieldName } from './sourceFieldNames';
 
 /**
  * CSV by reconstruction: the cells, written back in the only ways RFC 4180 writes them, must spell the row.
@@ -111,7 +112,8 @@ function countJsonTextTokens(text: string, counts: Map<string, number>): boolean
 function countJsonValueTokens(value: unknown, counts: Map<string, number>): void {
   if (Array.isArray(value)) { for (const item of value) countJsonValueTokens(item, counts); return; }
   if (value !== null && typeof value === 'object') {
-    for (const [name, item] of Object.entries(value)) { bump(counts, 's:' + name, -1); countJsonValueTokens(item, counts); }
+    // A field name stands for the member name of the text (sourceFieldNames.ts, G-5).
+    for (const [name, item] of Object.entries(value)) { bump(counts, 's:' + originalFieldName(name), -1); countJsonValueTokens(item, counts); }
     return;
   }
   if (typeof value === 'string') bump(counts, 's:' + value, -1);
@@ -197,7 +199,7 @@ export function cefEventUnaccounted(text: string, fields: Record<string, unknown
     while (cursor < length && text[cursor] !== '=' && text[cursor] !== ' ' && text[cursor] !== '\t') { key += text[cursor]!; cursor++; }
     if (text[cursor] !== '=') return 'text of the CEF extension is not part of any extracted field';
     cursor++;
-    const value = CEF_HEADER_FIELDS.includes(key) ? undefined : fields[key];
+    const value = CEF_HEADER_FIELDS.includes(key) ? undefined : fields[sourceFieldName(key)];
     if (typeof value !== 'string') return 'a key=value pair of the CEF extension is missing from the extracted fields';
     let index = 0;
     const valueStart = cursor;
@@ -265,7 +267,7 @@ export function leefEventUnaccounted(text: string, fields: Record<string, unknow
     while (cursor < length && text[cursor] !== '=' && text[cursor] !== delimiter) { key += text[cursor]!; cursor++; }
     if (text[cursor] !== '=') return 'text of the LEEF extension is not part of any extracted attribute';
     cursor++;
-    const value = LEEF_HEADER_FIELDS.includes(key) ? undefined : fields[key];
+    const value = LEEF_HEADER_FIELDS.includes(key) ? undefined : fields[sourceFieldName(key)];
     if (typeof value !== 'string') return 'an attribute of the LEEF extension is missing from the extracted fields';
     if (!text.startsWith(value, cursor)) return 'an extracted LEEF value is not the text of its attribute';
     cursor += value.length;

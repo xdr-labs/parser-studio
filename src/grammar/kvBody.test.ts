@@ -37,9 +37,15 @@ describe('contract-driven key=value body', () => {
   });
 
   it.each([
-    ['a=1 a=2', 'DUPLICATE_KEY'], ['__proto__=1', 'FORBIDDEN_KEY'], ['a=1 junk b=2', 'MALFORMED_PAIR'],
+    ['a=1 a=2', 'DUPLICATE_KEY'], ['a=1 junk b=2', 'MALFORMED_PAIR'],
     ['a="open', 'MALFORMED_PAIR'], ['', 'NO_PAIRS'], ['   ', 'NO_PAIRS'],
   ])('rejects %j as %s', (input, reason) => { expect(pairs(input)).toBe(reason); });
+
+  // G-5 (2026-11-25) supersedes FORBIDDEN_KEY: a reserved name is read under its reversible field name.
+  it('reads "__proto__=1" under its reversible field name', () => {
+    expect(pairs('__proto__=1')).toEqual([['parserstudio_key___proto__', '1']]);
+    expect(pairs('__proto__=1 __proto__=2')).toBe('DUPLICATE_KEY');
+  });
 
   it.each([0x1c, 0x1d, 0x1e, 0x1f])('never reads the information separator U+%s as value data or as a pair separator (issue #214)', (code) => {
     const control = String.fromCharCode(code);

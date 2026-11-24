@@ -20,13 +20,13 @@ export type KvBody =
   | { ok: false; reason: KvFailure; key?: string };
 
 import { matchAt, matchEnd } from './primitives';
+import { sourceFieldName } from './sourceFieldNames';
 
 const PAIR = new RegExp(GRAMMAR_FRAGMENTS.kv_pair.source, 'yu');
 const LIST_PAIR = new RegExp(GRAMMAR_FRAGMENTS.kv_list_pair.source, 'yu');
 const LIST_SEPARATOR = new RegExp(GRAMMAR_FRAGMENTS.kv_list_separator.source, 'yu');
 const TRAILING = new RegExp('^(?:' + SYSLOG_HEADER_TOKENS.KV_TRAILING + ')$','u');
 const UNESCAPED: readonly string[] = SYSLOG_HEADER_SEMANTICS.kvUnescapedAfterBackslash;
-const FORBIDDEN: readonly string[] = SYSLOG_HEADER_SEMANTICS.kvForbiddenKeys;
 
 /**
  * Decodes a QUOTED value: only the escapes the contract lists; every other backslash (a Windows path) stays
@@ -87,8 +87,8 @@ export function parseStrictKeyValues(input: string): KvBody {
     }
     const match = listed ? matchAt(LIST_PAIR, input, cursor) : matchAt(PAIR, input, cursor);
     if (!match || matchEnd(match) <= cursor) return { ok: false, reason: 'MALFORMED_PAIR' };
-    const key = match.groups!.key!;
-    if (FORBIDDEN.includes(key)) return { ok: false, reason: 'FORBIDDEN_KEY', key };
+    // A name the JavaScript object model reserves is kept under its reversible field name (sourceFieldNames.ts, G-5).
+    const key = sourceFieldName(match.groups!.key!);
     // Owner policy D-1: a repeated key is never resolved by keeping one of its values.
     if (seen.has(key)) return { ok: false, reason: 'DUPLICATE_KEY', key };
     if (pairs.length >= SYSLOG_HEADER_SEMANTICS.kvMaxPairs) return { ok: false, reason: 'TOO_MANY_PAIRS' };

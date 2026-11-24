@@ -11,6 +11,7 @@ from dataclasses import dataclass,field
 import re
 from typing import Any
 from syslog_header_grammar_generated import FRAGMENTS,PRI_MAX,RFC5424_SUPPORTED_VERSIONS,SEMANTICS,TOKENS
+from source_field_names import source_field_name
 
 # Supported CEF versions: shared grammar contract.
 CEF_VERSIONS=tuple(SEMANTICS['cefSupportedVersions'])
@@ -131,10 +132,8 @@ def _cef_extension(raw:str,begin:int)->Fragment:
         if ext.primitive_fields>=CEF_MAX_FIELDS:
             ext.issues.append("CEF_EXTENSION_LIMIT")
             return ext
-        key=matched["key"]
-        if key in FORBIDDEN_KEYS:
-            ext.issues.append("CEF_INVALID_EXTENSION_KEY_OR_BOUNDARY")
-            return ext
+        # A name the JavaScript object model reserves is kept under its reversible field name (G-5).
+        key=source_field_name(matched["key"])
         key_start=matched.start("key")
         start,end=matched.span("value")
         if pos<key_start:ext.covered.append((pos,key_start))
@@ -194,13 +193,14 @@ def _leef_extension(raw:str,begin:int,delimiter:str,*,skip_empty:bool=False)->Fr
             i=end+1
             continue
         matched=LEEF_ATTRIBUTE.match(raw,i,end)
-        if matched is None or matched["key"] in FORBIDDEN_KEYS:
+        if matched is None:
             ext.issues.append("LEEF_INVALID_EXTENSION_TOKEN")
             break
         if ext.primitive_fields>=1024:
             ext.issues.append("LEEF_EXTENSION_LIMIT")
             break
-        key=matched["key"]
+        # A name the JavaScript object model reserves is kept under its reversible field name (G-5).
+        key=source_field_name(matched["key"])
         _pair(ext.fields,key,raw[matched.end():end],ext.issues)
         ext.spans.append(("leef_extension."+key,matched.end(),end))
         ext.primitive_fields+=1

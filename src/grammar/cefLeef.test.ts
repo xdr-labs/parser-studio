@@ -38,7 +38,13 @@ describe('standalone CEF and LEEF', () => {
     expect(cef('k'.repeat(129) + '=v').errors).toHaveLength(1);
     // Escapes outside the table stay as written.
     expect(cef('msg=a\\tb\\=c\\\\d').fields).toMatchObject({ msg: 'a\\tb=c\\d' });
-    for (const key of ['__proto__', 'constructor', 'prototype']) expect(cef(key + '=1').errors, key).toHaveLength(1);
+    // G-5: a reserved name is read under its reversible field name, never as an object property of that name.
+    for (const key of ['__proto__', 'constructor', 'prototype']) {
+      const read = cef(key + '=1');
+      expect(read.errors, key).toEqual([]);
+      expect(read.fields['parserstudio_key_' + key], key).toBe('1');
+      expect(Object.prototype.hasOwnProperty.call(read.fields, key), key).toBe(false);
+    }
   });
 
   it('treats U+2028 inside a value as value data (F-9)', () => {

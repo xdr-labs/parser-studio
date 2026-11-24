@@ -8,6 +8,7 @@ import { parseStrictKeyValues } from './grammar/kvBody';
 import { getTag, matchAt, matchEnd, setTag } from './grammar/primitives';
 import { GRAMMAR_FRAGMENTS, SYSLOG_HEADER_SEMANTICS, SYSLOG_HEADER_TOKENS } from './grammar/syslogHeaderGrammar.generated';
 import {extractPortableRegexFields} from './portableRegexExtraction';
+import { sourceFieldName, withSourceFieldNames } from './grammar/sourceFieldNames';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
 export type StructuredFamily = 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef';
@@ -115,7 +116,6 @@ const LEEF_DELIMITER_VERSIONS:readonly string[]=SYSLOG_HEADER_SEMANTICS.leefDeli
 const LEEF_DELIMITER=new RegExp(GRAMMAR_FRAGMENTS.leef_delimiter.source,'yu');
 const LEEF_EXTRA_DELIMITERS:readonly number[]=SYSLOG_HEADER_SEMANTICS.leefDelimiterExtraCodePoints;
 const LEEF_ATTRIBUTE=new RegExp(GRAMMAR_FRAGMENTS.leef_attribute.source,'yu');
-const FORBIDDEN_KEYS:readonly string[]=SYSLOG_HEADER_SEMANTICS.kvForbiddenKeys;
 /** A backslash pair listed in the contract is decoded; any other pair is kept as written. */
 const decodeCefValue=(raw:string):string=>raw.replace(CEF_ESCAPE,pair=>
   Object.prototype.hasOwnProperty.call(CEF_ESCAPES,pair[1]!)?CEF_ESCAPES[pair[1]!]!:pair);
@@ -126,8 +126,8 @@ function cefExtensionValues(input:string):StructuredExtraction{
     const match=matchAt(CEF_PAIR,input,cursor);
     if(!match)break;
     if(count++>=SYSLOG_HEADER_SEMANTICS.cefMaxExtensionFields)return failure('CEF extension field limit exceeded');
-    const key=match.groups!.key!;
-    if(FORBIDDEN_KEYS.includes(key))return failure('Unsupported CEF extension field');
+    // A name the JavaScript object model reserves is kept under its reversible field name (G-5).
+    const key=sourceFieldName(match.groups!.key!);
     if(Object.prototype.hasOwnProperty.call(values,key))return failure(duplicateFieldMessage(key));
     values[key]=decodeCefValue(match.groups!.value!);
     cursor=matchEnd(match);
@@ -170,7 +170,7 @@ function boundedJsonObject(text: string): StructuredExtraction {
       return failure('Unsafe JSON numeric precision: quote large identifiers as strings');
     if (!jsonSourceValueValid(parsed))
       return failure('RFC5424 JSON body exceeds native nesting depth or contains invalid Unicode');
-    return { fields: parsed as Record<string, unknown>, errors: [] };
+    return { fields: withSourceFieldNames(parsed) as Record<string, unknown>, errors: [] };
   } catch {
     return failure('RFC5424 JSON body is not valid JSON');
   }
@@ -329,8 +329,10 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   if (parts[parts.length - 1]) {
     for (const part of parts[parts.length - 1].split(delimiter)) {
       const attribute = matchAt(LEEF_ATTRIBUTE, part, 0);
-      const key = attribute?.groups!.key;
-      if (!attribute || key === undefined || FORBIDDEN_KEYS.includes(key)) return failure('Unsupported LEEF extension token');
+      const name = attribute?.groups!.key;
+      if (!attribute || name === undefined) return failure('Unsupported LEEF extension token');
+      // A name the JavaScript object model reserves is kept under its reversible field name (G-5).
+      const key = sourceFieldName(name);
       if (Object.prototype.hasOwnProperty.call(record, key)) return failure(duplicateFieldMessage(key));
       record[key] = part.slice(matchEnd(attribute));
     }
