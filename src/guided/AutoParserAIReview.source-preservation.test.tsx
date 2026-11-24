@@ -77,7 +77,9 @@ it('accepts source values preserved by reviewed enrichment outputs',async()=>{
 it('rejects recovery when Funnel holdout values would disappear despite browser holdout success',async()=>{
  vi.stubGlobal('crypto',webcrypto);
  const source='allow,198.51.100.10';
- const holdout='allow,192.0.2.10\ndeny,192.0.2.11';
+ const holdout='allow,192.0.2.10\nallow,192.0.2.11';
+ // Owner decision Q3-1 keeps every capture a reply leaves unmapped (src/unmappedFields.ts), so this recipe loses
+ // source text the one way a recovery still can: it reads that text as a regex literal outside any capture.
  const draft=createDraft(),apply=vi.fn();
  const recipe={
   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
@@ -85,17 +87,17 @@ it('rejects recovery when Funnel holdout values would disappear despite browser 
   sample:{sha256:createHash('sha256').update(source).digest('hex'),events:1},
   stages:[
    {op:'split_event',boundary:'single-line'},
-   {op:'parse_regex',pattern:'^(?<action>[^,]+),(?<src_ip>[^,]+)$'},
-   {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+   {op:'parse_regex',pattern:'^allow,(?<src_ip>[^,]+)$'},
+   {op:'map_field',source:'src_ip',target:'custom.src_ip',data_type:'string',group:'vendor_fields'},
    {op:'classify',defaultIndex:'syslog',rules:[]},
    {op:'fallback_unparsed',mode:'retain_unparsed'},
   ],nativeVerified:false,targetVerified:false,
  };
  render(<AutoParserAIReview raw={source} status="unsupported" onChatGPT={vi.fn()}
   source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
-  protectedSourceValuesByEvent={[['allow']]}
+  protectedSourceValuesByEvent={[['198.51.100.10']]}
   holdoutEvidenceRequester={async()=>batchEvidence(holdout,
-   [['allow','192.0.2.10'],['deny','192.0.2.11']])}/>);
+   [['allow','192.0.2.10'],['allow','192.0.2.11']])}/>);
  fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
  fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
@@ -144,6 +146,8 @@ it('rejects full recovery when extracted source values would be omitted from fin
  vi.stubGlobal('crypto',webcrypto);
  const source='allow,198.51.100.10';
  const holdout='allow,192.0.2.10\ndeny,192.0.2.11';
+ // Owner decision Q3-1 keeps every capture a reply leaves unmapped (src/unmappedFields.ts), so this recipe loses
+ // source text the one way a recovery still can: it reads that text as a regex literal outside any capture.
  const draft=createDraft(),apply=vi.fn();
  const recipe={
   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
@@ -151,8 +155,8 @@ it('rejects full recovery when extracted source values would be omitted from fin
   sample:{sha256:createHash('sha256').update(source).digest('hex'),events:1},
   stages:[
    {op:'split_event',boundary:'single-line'},
-   {op:'parse_regex',pattern:'^(?<action>[^,]+),(?<src_ip>[^,]+)$'},
-   {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+   {op:'parse_regex',pattern:'^allow,(?<src_ip>[^,]+)$'},
+   {op:'map_field',source:'src_ip',target:'custom.src_ip',data_type:'string',group:'vendor_fields'},
    {op:'classify',defaultIndex:'syslog',rules:[]},
    {op:'fallback_unparsed',mode:'retain_unparsed'},
   ],nativeVerified:false,targetVerified:false,
@@ -205,7 +209,95 @@ it('allows explicit empty string source spans to follow backend ignore semantics
  vi.unstubAllGlobals();
 });
 
-it('rejects full recovery when an unparsed residual survives extraction but not final output',async()=>{
+it('rejects full recovery when previously unparsed text is read but not kept in the final output',async()=>{
+ vi.stubGlobal('crypto',webcrypto);
+ const source='prefix id=123 suffix';
+ const holdout='prefix id=456 suffix\nprefix id=789 suffix';
+ // Owner decision Q3-1 keeps every capture a reply leaves unmapped (src/unmappedFields.ts), so this recipe loses
+ // source text the one way a recovery still can: it reads that text as a regex literal outside any capture.
+ const draft=createDraft(),apply=vi.fn();
+ const recipe={
+  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+  projectId:'draft-demo_firewall',sourceFormat:'regex',bodyFormat:'regex',
+  sample:{sha256:createHash('sha256').update(source).digest('hex'),events:1},
+  stages:[
+   {op:'split_event',boundary:'single-line'},
+   {op:'parse_regex',pattern:'^prefix id=(?<id>\\d+) suffix$'},
+   {op:'map_field',source:'id',target:'custom.id',data_type:'string',group:'top_fields'},
+   {op:'classify',defaultIndex:'syslog',rules:[]},
+   {op:'fallback_unparsed',mode:'retain_unparsed'},
+  ],nativeVerified:false,targetVerified:false,
+ };
+ render(<AutoParserAIReview raw={source} status="partial" onChatGPT={vi.fn()}
+  source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
+  protectedSourceValuesByEvent={[['123']]}
+  protectedResidualTextByEvent={[['prefix ',' suffix']]}/>);
+ fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+ fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
+ fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
+ fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
+ expect(await screen.findByText(/would leave 2 of 2 previously unparsed source regions outside the final parser output/)).toBeTruthy();
+ expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
+ vi.unstubAllGlobals();
+});
+
+function scalarOutput(value:unknown,out:string[]=[]):string[]{
+ if(typeof value==='string')out.push(value);
+ else if(Array.isArray(value))for(const item of value)scalarOutput(item,out);
+ else if(value&&typeof value==='object')for(const item of Object.values(value))scalarOutput(item,out);
+ return out;
+}
+
+async function approveAndApply(apply:ReturnType<typeof vi.fn>){
+ expect(await screen.findByText(/Fix passed: full parser recovery/)).toBeTruthy();
+ fireEvent.click(screen.getByRole('checkbox',{name:'Approve tested fix'}));
+ fireEvent.click(screen.getByRole('button',{name:'Apply Verified Fix'}));
+ await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
+ const applied=apply.mock.calls[0]![0] as Parameters<typeof preview>[1];
+ expect(applied.preserveUnmapped).toBe(true);
+ return applied;
+}
+
+// Owner decision Q3-1: the recipes the two tests below send were rejected before because the final output dropped a
+// capture the reply left unmapped. A ChatGPT recovery now keeps that capture, so the same recipes pass and every
+// source value is checked in the applied parser's final output, for the sample and for each additional test log.
+it('keeps a capture a ChatGPT recovery leaves unmapped in the final output (Q3-1)',async()=>{
+ vi.stubGlobal('crypto',webcrypto);
+ const source='allow,198.51.100.10';
+ const holdout='allow,192.0.2.10\ndeny,192.0.2.11';
+ const draft=createDraft(),apply=vi.fn();
+ const recipe={
+  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+  projectId:'draft-demo_firewall',sourceFormat:'regex',bodyFormat:'regex',
+  sample:{sha256:createHash('sha256').update(source).digest('hex'),events:1},
+  stages:[
+   {op:'split_event',boundary:'single-line'},
+   {op:'parse_regex',pattern:'^(?<action>[^,]+),(?<src_ip>[^,]+)$'},
+   {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+   {op:'classify',defaultIndex:'syslog',rules:[]},
+   {op:'fallback_unparsed',mode:'retain_unparsed'},
+  ],nativeVerified:false,targetVerified:false,
+ };
+ render(<AutoParserAIReview raw={source} status="unsupported" onChatGPT={vi.fn()}
+  source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
+  protectedSourceValuesByEvent={[['allow','198.51.100.10']]}
+  holdoutEvidenceRequester={async()=>batchEvidence(holdout,
+   [['allow','192.0.2.10'],['deny','192.0.2.11']])}/>);
+ fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+ fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
+ fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
+ fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
+ const applied=await approveAndApply(apply);
+ for(const line of [source,...holdout.split('\n')]){
+  const event=preview(line,applied).events[0]!;
+  expect(event.parseStatus).toBe('FULL');
+  const values=scalarOutput(event.normalized);
+  for(const value of line.split(','))expect(values).toContain(value);
+ }
+ vi.unstubAllGlobals();
+});
+
+it('keeps previously unparsed text a ChatGPT recovery captures but leaves unmapped in the final output (Q3-1)',async()=>{
  vi.stubGlobal('crypto',webcrypto);
  const source='prefix id=123 suffix';
  const holdout='prefix id=456 suffix\nprefix id=789 suffix';
@@ -225,12 +317,19 @@ it('rejects full recovery when an unparsed residual survives extraction but not 
  render(<AutoParserAIReview raw={source} status="partial" onChatGPT={vi.fn()}
   source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
   protectedSourceValuesByEvent={[['123']]}
-  protectedResidualTextByEvent={[['prefix ',' suffix']]}/>);
+  protectedResidualTextByEvent={[['prefix ',' suffix']]}
+  holdoutEvidenceRequester={async()=>batchEvidence(holdout,[['456'],['789']])}/>);
  fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
  fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
  fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
- expect(await screen.findByText(/would leave 2 of 2 previously unparsed source regions outside the final parser output/)).toBeTruthy();
- expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
+ const applied=await approveAndApply(apply);
+ for(const line of [source,...holdout.split('\n')]){
+  const event=preview(line,applied).events[0]!;
+  expect(event.parseStatus).toBe('FULL');
+  const values=scalarOutput(event.normalized);
+  expect(values).toContain(line);
+  expect(values).toContain(line.match(/\d+/)![0]);
+ }
  vi.unstubAllGlobals();
 });

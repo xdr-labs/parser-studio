@@ -205,7 +205,10 @@ export function proposeV01RecoveryParserFromAI(imported:AIImportResult,draft:Par
  const parseRegex=recipe.stages.find((s):s is Extract<ReviewStage,{op:'parse_regex'}>=>s.op==='parse_regex');
  const parseGeneric=recipe.stages.find((s):s is Extract<ReviewStage,{op:'parse_generic_structural'}>=>s.op==='parse_generic_structural');
  const dispatch=recipe.stages.find((s):s is Extract<ReviewStage,{op:'dispatch_family'}>=>s.op==='dispatch_family');
- const candidate:ParserDraft={...selectDraftFormat(draft,recipe.sourceFormat),mappings,guided:nextOpts,
+ // Owner decision Q3-1: a parser ChatGPT Assisted builds keeps every field its reader extracts that no mapping of
+ // the reviewed recipe reads (a capture the reply left unmapped, a key the sample never showed), as the Auto
+ // Parser does (src/unmappedFields.ts).
+ const candidate:ParserDraft={...selectDraftFormat(draft,recipe.sourceFormat),mappings,guided:nextOpts,preserveUnmapped:true,
    ...(recipe.sourceFormat==='csv'&&parseCsv?{csvColumns:parseCsv.columns.join(','),csvDelimiter:parseCsv.delimiter}:{}),
    ...(recipe.sourceFormat==='regex'&&parseRegex?{pattern:parseRegex.pattern}:{}),
    ...(recipe.sourceFormat==='mixed'&&dispatch?{mixedFormats:[...dispatch.families]}:{}),
