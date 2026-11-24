@@ -192,7 +192,7 @@ describe('independent audit of 240b2e6 (A-1 signs and separators, A-2 key names,
    {id:'offset',source:'offset',target:'custom.offset',type:'string'}]});
   expect(account(source,both,values).events[0]!.missing).toBe(0);
  });
- it('A-3: a capture of fixed words that cannot be changed is decided by the count rule',()=>{
+ it('A-3: a capture of fixed words that cannot be changed is decided by its field name',()=>{
   const source='proto TCP port 443';
   const pattern=String.raw`^proto (?<proto>TCP|UDP) port (?<port>\d+)$`;
   expect(account(source,regexDraft(pattern),[['TCP','443']]).events[0]).toMatchObject({required:2,missing:0});
@@ -261,6 +261,60 @@ describe('independent re-audit of 4c04b0b (F-2 field identity, F-3 typed casts, 
   const regions=source.split('\n').map(line=>locateResidualRegions(line,[line.slice(5)])!);
   expect(accountResidualRegions(source,lossy,regions).events.map(event=>[event.missing,event.reason])).toEqual([
    [1,'UNACCOUNTED_SOURCE'],[0,'NOT_EVALUATED'],[0,'NOT_EVALUATED']]);
+ });
+});
+
+describe('verification of fbcb12f and a629389 (R-1 inconclusive probes, N-1 event profiles, N-2 quoted keys, R-2 flags)',()=>{
+ const mapped=(pattern:string,mappings:{source:string;target:string;type:string}[],preserve=true,extra:Partial<ParserDraft>={})=>
+  regexDraft(pattern,{preserveUnmapped:preserve?true:undefined,
+   mappings:mappings.map((item,index)=>({id:'m'+index,...item})),...extra} as Partial<ParserDraft>);
+ it('R-1: a capture of fixed alternatives whose cast rewrites it cannot be paid by a twin',()=>{
+  const source='a 0443 b 0443';
+  const pattern=String.raw`^(?<ka>a) (?<a>\d+) (?<kb>b) (?<b>0443|0080)$`;
+  const twin=mapped(pattern,[{source:'a',target:'a1',type:'string'},{source:'a',target:'a2',type:'string'},
+   {source:'b',target:'dstport',type:'port'}]);
+  expect(account(source,twin,[[source]]).events[0]).toMatchObject({missing:1,firstUnaccounted:{startByte:9,endByte:13}});
+  const kept=mapped(pattern,[{source:'a',target:'a1',type:'string'},{source:'b',target:'dstport',type:'string'}]);
+  expect(account(source,kept,[[source]]).events[0]!.missing).toBe(0);
+ });
+ it('R-1: probes that only reach fixed text fall back to the field name, which a dropped twin does not have',()=>{
+  const source='host web01.example.com peer web01.example.com';
+  const pattern=String.raw`^host (?<host>web\d+\.example\.com) peer (?<peer>web\d+\.example\.com)$`;
+  const texts=[['web01.example.com','web01.example.com']];
+  const twice=mapped(pattern,[{source:'host',target:'host_a',type:'string'},{source:'host',target:'host_b',type:'string'}],false);
+  expect(account(source,twice,texts).events[0]).toMatchObject({required:2,missing:1});
+  const both=mapped(pattern,[{source:'host',target:'host_a',type:'string'},{source:'peer',target:'host_b',type:'string'}],false);
+  expect(account(source,both,texts).events[0]!.missing).toBe(0);
+ });
+ it('N-1: with event profiles a capture that selects the profile cannot prove its value by a route change',()=>{
+  const source='kind=0001 id=0001 user=alice';
+  const pattern=String.raw`^kind=(?<kind>\d+) id=(?<id>\d+) user=(?<user>\S+)$`;
+  const eventProfiles={discriminator:'kind',unknown:'reject',variants:[
+   {name:'login',equals:'0001',mappings:[{id:'v1',source:'id',target:'id_text',type:'string'}]},
+   {name:'logout',equals:'0009',mappings:[{id:'v3',source:'user',target:'logout_user',type:'string'}]}]};
+  const draft=mapped(pattern,[{source:'kind',target:'kind_num',type:'integer'},{source:'id',target:'id_copy',type:'string'},
+   {source:'user',target:'srcuser',type:'string'}],true,{eventProfiles} as unknown as Partial<ParserDraft>);
+  const output=JSON.stringify(preview(source,draft).events[0]!.normalized);
+  expect(output).toContain('"kind_num":1');
+  expect(account(source,draft,[[source]]).events[0]).toMatchObject({missing:1,firstUnaccounted:{startByte:0,endByte:4}});
+ });
+ it('N-2: a key keeps its exemption when the capture starts at the opening quote',()=>{
+  const source='devname="FG100E" action="deny" srcip=192.0.2.10';
+  const pattern=String.raw`^devname=(?<devname>"[^"]*") action=(?<action>"[^"]*") srcip=(?<srcip>[0-9.]+)$`;
+  expect(account(source,regexDraft(pattern),[[source]]).events[0]).toMatchObject({method:'capture_spans',missing:0});
+ });
+ it('R-2: a flag or sign after a quote, a bracket, a comma or = is refused when read as pattern text',()=>{
+  const cases:[string,string,string][]=[
+   ['val "-inf" ok',String.raw`^val "-(?<v>[a-z]+)" (?<result>\S+)$`,'"-inf"'],
+   ['val (-inf) ok',String.raw`^val \(-(?<v>[a-z]+)\) (?<result>\S+)$`,'(-inf)'],
+   ['opt --verbose ok',String.raw`^opt --(?<o>[a-z]+) (?<result>\S+)$`,'--verbose'],
+  ];
+  for(const [source,pattern,value] of cases){
+   const at=source.indexOf('-');
+   expect(account(source,regexDraft(pattern),[[value]]).events[0],source).toMatchObject({missing:1,
+    firstUnaccounted:{startByte:at}});
+  }
+  expect(isValueBearing('src-ip',3)).toBe(false);
  });
 });
 

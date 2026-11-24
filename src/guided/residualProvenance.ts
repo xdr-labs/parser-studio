@@ -66,16 +66,16 @@ export function utf8Offsets(text:string):number[]{
  return offsets;
 }
 
-/** Index of the value after a key ending at `index`: `=` with optional blanks around it and one opening quote or
- * bracket (`key=v`, `key = v`, `key="v"`, `key=[v]`; re-audit F-5); null when no `=` follows the key. */
-function keyValueStart(text:string,index:number):number|null{
+/** Where the value after a key ending at `index` may start: after `=` with optional blanks around it, and after one
+ * opening quote or bracket (`key=v`, `key = v`, `key="v"` with the quotes inside or outside the capture, `key=[v]`;
+ * re-audit F-5 and N-2); empty when no `=` follows the key. */
+function keyValueStarts(text:string,index:number):number[]{
  let at=index;
  while(text[at]===' '||text[at]==='\t')at++;
- if(text[at]!=='=')return null;
+ if(text[at]!=='=')return [];
  at++;
  while(text[at]===' '||text[at]==='\t')at++;
- if(text[at]!==undefined&&'"\'[({'.includes(text[at]!))at++;
- return at;
+ return text[at]!==undefined&&'"\'[({'.includes(text[at]!)?[at,at+1]:[at];
 }
 function codePointBefore(text:string,index:number):string|undefined{
  if(index<=0)return undefined;
@@ -96,7 +96,8 @@ const SEPARATORS=new Set(['/','|',',',';','"',"'",'[',']','(',')','{','}','@','?
 /**
  * Whether the character at `index` carries value, so that a pattern may not read it as literal text outside every
  * capture: letters, digits, marks, `_` and every non-ASCII non-space character; a `-` before a digit or a decimal
- * point (a sign, also inside `-05:00`, `1e-5`, `-.5`) or at the start of a word (`-inf`, `-la`); every `+` (`GMT+9`,
+ * point (a sign, also inside `-05:00`, `1e-5`, `-.5`) or after a non-word character before a word or another `-`
+ * (`-inf`, `"-inf"`, `opt=-la`, `--verbose`; not `src-ip`); every `+` (`GMT+9`,
  * `C++`, `5+`); a `.` next to a digit or another `.` (`.5`, `1.2.3.4`); a `:` next to another `:` (IPv6 `::1`) or
  * between two digits (`10:00`, `1.2.3.4:443`); a `%` next to a digit; an `=` next to `=`, `!`, `<` or `>` (an
  * operator: `!=`, `<=`); and any punctuation that is not a plain separator (`!`, `<`, `>`, `~`, `^`, `*`, `$`, `#`). White space, a lone `-` placeholder and the separators above are syntax. A token such as
@@ -112,7 +113,7 @@ export function isValueBearing(text:string,index:number):boolean{
  const previous=codePointBefore(text,index),next=codePointAfter(text,index);
  switch(ch){
   case '-':return isDigit(next)||next==='.'||
-   ((previous===undefined||SPACE.test(previous))&&next!==undefined&&WORD.test(next));
+   ((previous===undefined||!WORD.test(previous))&&next!==undefined&&(WORD.test(next)||next==='-'));
   case '.':return isDigit(previous)||isDigit(next)||previous==='.'||next==='.';
   case ':':return previous===':'||next===':'||(isDigit(previous)&&isDigit(next));
   case '%':return isDigit(previous)||isDigit(next);
@@ -128,7 +129,7 @@ function substitutions(text:string):{index:number;width:number;replacement:strin
  for(let index=0;index<text.length;){
   const point=text.codePointAt(index)!;const width=point>0xffff?2:1;
   let replacement:number|null=null;
-  if(point>=0x30&&point<=0x39)replacement=point===0x39?0x38:point+1;
+  if(point>=0x30&&point<=0x39)replacement=point<0x35?point+1:point-1;
   else if((point>=0x41&&point<=0x5a)||(point>=0x61&&point<=0x7a))replacement=point===0x5a||point===0x7a?point-1:point+1;
   else if(point===0x2d)replacement=0x2b;
   else if(point===0x2b)replacement=0x2d;
@@ -277,9 +278,8 @@ export function accountEventResiduals(raw:string,normalized:Record<string,unknow
   const closeRun=()=>{
    if(!run)return;
    const current=run;run=null;
-   const valueStart=keyValueStart(raw,current.end);
-   const exempt=!current.covered&&valueStart!==null&&
-    keyCapture(raw.slice(current.start,current.end),offsets[valueStart]!);
+   const exempt=!current.covered&&keyValueStarts(raw,current.end)
+    .some(valueStart=>keyCapture(raw.slice(current.start,current.end),offsets[valueStart]!));
    if(exempt||regionLost)return;
    regionLost=true;
    firstUnaccounted??={startByte:offsets[current.start]!,endByte:offsets[current.end]!};
@@ -321,15 +321,16 @@ function probeOrder<T>(options:T[]):T[]{
 }
 const MAX_PROBES=8;
 /**
- * Whether the capture's own text reaches the candidate's output (independent re-audit F-2/F-3 of 4c04b0b). The output
- * fields that hold the capture text exactly (or a decoded form of it) are the candidate holders. One character of the
- * capture is changed in the event; the probe is conclusive when the changed event still matches with the capture
- * reading the changed text and still has output. The capture is carried when that change alters at least one holder:
- * a field holding exactly this text depends on this capture. A twin capture with the same text, a copy mapped twice or
- * a cast that rewrites the value (`0443` to 443) does not make a holder depend on a dropped capture; a changed value
- * that fails its cast (`true` to `truf`) still alters the holder, so a lossless typed value is not refused.
- * One conclusive probe decides. When no probe is conclusive (a capture of fixed words such as `(?<proto>TCP|UDP)`, or
- * punctuation only), the capture is decided by the count rule alone.
+ * Whether the capture's own text reaches the candidate's output (field identity; re-audits of 4c04b0b and fbcb12f).
+ * The holders are the output fields that hold the capture text exactly (or a decoded form of it). One character of
+ * the capture is changed in the event; a probe counts only when the changed event still matches with the capture
+ * reading the changed text and still has output. A probe decides:
+ * - carried, when a holder then holds the changed text (the field follows this capture);
+ * - not carried, when no holder changes (the text is held by a twin, a copy mapped twice, or nothing).
+ * A holder that changes in another way (a cast that fails on the changed text, another event profile) decides
+ * nothing. When no probe decides (fixed words such as `(?<proto>TCP|UDP)`, punctuation, values that only a cast
+ * accepts), the capture is renamed in the expression: it is carried when a holder then changes (its mapping or its
+ * preserved name made the holder). With event profiles a rename can change the route, so it proves nothing.
  */
 function captureCarried(raw:string,offsets:number[],capture:CaptureSpan,base:Map<string,string>,draft:ParserDraft):boolean{
  const start=indexOfByte(offsets,capture.startByte),end=indexOfByte(offsets,capture.endByte);
@@ -343,14 +344,32 @@ function captureCarried(raw:string,offsets:number[],capture:CaptureSpan,base:Map
   const spans=regexCaptureSpans(changed,draft);
   if(!('captures' in spans)||!spans.captures.some(item=>item.name===capture.name&&
    item.startByte===capture.startByte&&item.text===text))continue;
-  let normalized:Record<string,unknown>|undefined;
-  try{const events=preview(changed,draft).events;normalized=events.length===1?events[0]!.normalized:undefined;}
-  catch{normalized=undefined;}
-  if(!normalized)continue;
-  const after=scalarPaths(normalized);
-  return holders.some(path=>after.get(path)!==base.get(path));
+  const after=outputPaths(changed,draft);
+  if(!after)continue;
+  const changedForms=sourceAlternatives(text);
+  if(holders.some(path=>{const value=after.get(path);return value!==undefined&&changedForms.includes(value);}))return true;
+  if(holders.every(path=>after.get(path)===base.get(path)))return false;
+  // A holder that disappears is a value its cast refuses (`true` to `truf`) or another route: other one-character
+  // changes of the same value usually fail the same way, so the field name decides at once (re-audit F-7).
+  if(holders.some(path=>!after.has(path)))break;
  }
- return true;
+ return carriedByName(raw,capture,holders,base,draft);
+}
+function outputPaths(raw:string,draft:ParserDraft):Map<string,string>|null{
+ try{
+  const events=preview(raw,draft).events;
+  const normalized=events.length===1?events[0]!.normalized:undefined;
+  return normalized?scalarPaths(normalized):null;
+ }catch{return null;}
+}
+function carriedByName(raw:string,capture:CaptureSpan,holders:string[],base:Map<string,string>,draft:ParserDraft):boolean{
+ if(draft.eventProfiles)return false;
+ const pattern=draft.pattern??'';const marker=`(?<${capture.name}>`;
+ if(pattern.split(marker).length!==2)return false;
+ let name=capture.name+'_probe';
+ while(pattern.includes(`(?<${name}>`))name+='_';
+ const after=outputPaths(raw,{...draft,pattern:pattern.replace(marker,`(?<${name}>`)});
+ return after!==null&&holders.some(path=>after.get(path)!==base.get(path));
 }
 
 /** Account the residual regions of a candidate's batch output (for tests, the suite can be supplied). */
