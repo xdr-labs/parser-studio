@@ -10,7 +10,8 @@ import {buildReviewableRecipe} from './parserRecipeV2';
 import {recoveryResponseContract,sourceMarkers} from './chatGptPromptBuilder';
 import {MAX_EVENTS,preview,splitEvents} from '../parser';
 import {runInWorker,runResidualAccountingInWorker} from '../previewWorkerClient';
-import {locateResidualRegions,usesRegexExtraction,type ResidualAccounting,type ResidualRegion} from './residualProvenance';
+import {RESIDUAL_PROVENANCE_CONTRACT,locateResidualRegions,usesRegexExtraction,type ResidualAccounting,
+ type ResidualRegion} from './residualProvenance';
 import {scalarValues,sourceAlternatives} from './sourceValueForms';
 import {defaultGuidedOptions} from './contract';
 import {sha256Utf8Hex} from '../sha256';
@@ -94,7 +95,14 @@ export function protectedValueRegression(candidate:SuiteResult,protectedValues:s
 // recipe may read a multi-token region into several fields. Without that evidence the strict rule stays: the region
 // must be kept whole in one output value. Counting the region's words anywhere in the output let a recipe drop literal
 // digits and signs (verification of 3f363d2, D-1) and is not used.
-function protectedResidualRegression(candidate:SuiteResult,protectedResiduals:string[][]|undefined,
+/**
+ * `accounting` is the character-level evidence of a regex candidate (null for any other candidate). A regex candidate
+ * must prove every residual region of an event with capture spans: when the evidence of an event is missing (exact
+ * ranges that do not fit the event, a worker failure or time-out, an expression that does not match), the event's
+ * regions count as unaccounted. The whole-value rule below is only used for candidates without such evidence; its
+ * substring test cannot tell an earlier parsed copy of the same text from the residual (re-audit F-1 of 4c04b0b).
+ */
+export function protectedResidualRegression(candidate:SuiteResult,protectedResiduals:string[][]|undefined,
  accounting?:ResidualAccounting|null):{event:number;missing:number;required:number}|null{
  if(!protectedResiduals?.some(values=>values.length))return null;
  for(let index=0;index<protectedResiduals.length;index++){
@@ -109,6 +117,7 @@ function protectedResidualRegression(candidate:SuiteResult,protectedResiduals:st
    if(evidence.missing)return {event:index+1,missing:evidence.missing,required:evidence.required};
    continue;
   }
+  if(accounting)return {event:index+1,missing:required.length,required:required.length};
   const pool=scalarValues(event?.normalized);
   let missing=0;
   for(const residual of required){
@@ -131,18 +140,22 @@ export function residualRegionsFor(suite:SuiteResult,texts:string[][],exact?:Res
   const raw=suite.events[index]?.raw;
   if(raw===undefined)return [];
   if(!exact)return locateResidualRegions(raw,values)??[];
-  const regions=exact[index];
+  // Multi-Pass frames an event after a leading UTF-8 BOM and leading blanks, and its ranges are relative to that
+  // frame, while the candidate's event keeps them (re-audit F-1): shift the ranges by the bytes of that prefix.
+  const shift=new TextEncoder().encode(/^\uFEFF?[ \t\r\n]*/u.exec(raw)![0]).byteLength;
+  const regions=exact[index]?.map(region=>({startByte:region.startByte+shift,endByte:region.endByte+shift}));
   if(regions&&regions.length===values.length&&regions.every((region,position)=>bytesText(raw,region)===values[position]))
    return regions;
   return [];
  });
 }
-/** Character-level residual evidence for a regex candidate, computed in the preview worker; null when unavailable. */
+/** Character-level residual evidence for a regex candidate, computed in the preview worker; null for any other
+ * candidate. A regex candidate whose evidence cannot be computed gets an empty accounting, which refuses it. */
 async function residualAccounting(source:string,candidate:ParserDraft,suite:SuiteResult,texts:string[][]|undefined,
  exact?:ResidualRegion[][]):Promise<ResidualAccounting|null>{
  if(!texts?.some(values=>values.length)||!usesRegexExtraction(candidate))return null;
  try{return await runResidualAccountingInWorker(source,candidate,residualRegionsFor(suite,texts,exact));}
- catch{return null;}
+ catch{return {contract:RESIDUAL_PROVENANCE_CONTRACT,events:[]};}
 }
 
 function multiPassProtection(source:string,batch:MultiPassBatchPreview):{
@@ -218,7 +231,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      'IMPORTANT: only the manually reviewed excerpt, not the full original source, is included below. Its SHA/event metadata refers to the larger unchanged local source. Do not infer rules for unseen events; if the excerpt is insufficient to establish a complete source grammar, return REVIEW_REQUIRED: and ask for additional approved samples.',
      ...(suite?[]:['No local compiler-ready suite is available in this pane; the returned recipe must be independently validated with the complete original source in ChatGPT Assisted before use.']),
      'Supported recovery grammars are JSON, strict key/value, explicit-column CSV, CEF, LEEF, bounded RFC3164/RFC5424 bodies, allowlisted mixed families, bounded Java stack traces, and bounded named-capture Regex for otherwise unresolved one-line text.',
-     'If a Regex is required, use parse_regex with a pattern no longer than 256 visible characters, at least one named capture, and no backreferences/lookbehind/unsafe nested repetition. Every letter, digit, _ and non-ASCII character of the source, every sign before a digit, every . next to a digit, every : between digits or in ::, every % next to a digit and operators such as != must be inside a named capture (keep fixed message words by capturing the whole message and nesting the value captures inside it; split a token such as ASA-6-302013 or 10:00:00 by capturing it whole with nested part captures); only white space, separators such as / | , ; ( ) [ ] and a key name directly before = and a capture spelled exactly like it may stay literal. Grok, scripting, executable Ruby and guessed semantics remain unsupported.');
+     'If a Regex is required, use parse_regex with a pattern no longer than 256 visible characters, at least one named capture, and no backreferences/lookbehind/unsafe nested repetition. Every letter, digit, _ and non-ASCII character of the source, every +, every - before a digit or at the start of a word, every . next to a digit, every : between digits or in ::, every % next to a digit and operators such as != or <= must be inside a named capture (keep fixed message words by capturing the whole message and nesting the value captures inside it; split a token such as ASA-6-302013 or 10:00:00 by capturing it whole with nested part captures); only white space, separators such as / | , ; ( ) [ ] and a key name directly before = and a capture spelled exactly like it may stay literal. Grok, scripting, executable Ruby and guessed semantics remain unsupported.');
    }
   }
   const reviewedHash=await sha256Utf8Hex(reviewedExcerpt);

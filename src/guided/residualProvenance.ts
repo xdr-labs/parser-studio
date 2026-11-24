@@ -41,7 +41,7 @@ export type ResidualAccountingEvent={
  required:number;
  /** Regions with at least one value-bearing character the candidate does not carry. */
  missing:number;
- reason?:ResidualRefusal|'NOT_REGEX'|'NO_MATCH'|'INVALID_REGION'|'EVENT_MISSING';
+ reason?:ResidualRefusal|'NOT_REGEX'|'NO_MATCH'|'INVALID_REGION'|'EVENT_MISSING'|'NOT_EVALUATED';
  /** First unaccounted character, UTF-8 bytes in the event (no source text is reported). */
  firstUnaccounted?:{startByte:number;endByte:number};
 };
@@ -65,6 +65,17 @@ export function utf8Offsets(text:string):number[]{
  return offsets;
 }
 
+/** Index of the value after a key ending at `index`: `=` with optional blanks around it and one opening quote or
+ * bracket (`key=v`, `key = v`, `key="v"`, `key=[v]`; re-audit F-5); null when no `=` follows the key. */
+function keyValueStart(text:string,index:number):number|null{
+ let at=index;
+ while(text[at]===' '||text[at]==='\t')at++;
+ if(text[at]!=='=')return null;
+ at++;
+ while(text[at]===' '||text[at]==='\t')at++;
+ if(text[at]!==undefined&&'"\'[({'.includes(text[at]!))at++;
+ return at;
+}
 function codePointBefore(text:string,index:number):string|undefined{
  if(index<=0)return undefined;
  const before=text.codePointAt(index-1)!;
@@ -83,11 +94,11 @@ const SEPARATORS=new Set(['/','|',',',';','"',"'",'[',']','(',')','{','}','@','?
 
 /**
  * Whether the character at `index` carries value, so that a pattern may not read it as literal text outside every
- * capture: letters, digits, marks, `_` and every non-ASCII non-space character; a `+` or `-` before a digit or a
- * decimal point (a sign, also inside `-05:00`, `GMT+9`, `1e-5`, `-.5`); a `.` next to a digit or another `.` (`.5`,
- * `1.2.3.4`); a `:` next to another `:` (IPv6 `::1`) or between two digits (`10:00`, `1.2.3.4:443`); a `%` next to a
- * digit; an `=` next to another `=`; and any punctuation that is not a plain separator (`!`, `<`, `>`, `~`, `^`, `*`,
- * `$`, `#`: `!=` is not `=`). White space, a lone `-` placeholder and the separators above are syntax. A token such as
+ * capture: letters, digits, marks, `_` and every non-ASCII non-space character; a `-` before a digit or a decimal
+ * point (a sign, also inside `-05:00`, `1e-5`, `-.5`) or at the start of a word (`-inf`, `-la`); every `+` (`GMT+9`,
+ * `C++`, `5+`); a `.` next to a digit or another `.` (`.5`, `1.2.3.4`); a `:` next to another `:` (IPv6 `::1`) or
+ * between two digits (`10:00`, `1.2.3.4:443`); a `%` next to a digit; an `=` next to `=`, `!`, `<` or `>` (an
+ * operator: `!=`, `<=`); and any punctuation that is not a plain separator (`!`, `<`, `>`, `~`, `^`, `*`, `$`, `#`). White space, a lone `-` placeholder and the separators above are syntax. A token such as
  * `10:00:00`, `ASA-6-302013` or `1.2.3.4:443` is split losslessly by capturing it whole and nesting the part captures
  * inside it (independent audit A-1 of 240b2e6).
  */
@@ -99,11 +110,12 @@ export function isValueBearing(text:string,index:number):boolean{
  if(WORD.test(ch)||point>0x7f)return true;
  const previous=codePointBefore(text,index),next=codePointAfter(text,index);
  switch(ch){
-  case '-':case '+':return isDigit(next)||next==='.';
+  case '-':return isDigit(next)||next==='.'||
+   ((previous===undefined||SPACE.test(previous))&&next!==undefined&&WORD.test(next));
   case '.':return isDigit(previous)||isDigit(next)||previous==='.'||next==='.';
   case ':':return previous===':'||next===':'||(isDigit(previous)&&isDigit(next));
   case '%':return isDigit(previous)||isDigit(next);
-  case '=':return previous==='='||next==='=';
+  case '=':return previous==='='||next==='='||previous==='!'||previous==='<'||previous==='>';
   default:return !SEPARATORS.has(ch);
  }
 }
@@ -244,11 +256,11 @@ export function accountEventResiduals(raw:string,normalized:Record<string,unknow
  }
  const counted=touching.filter(capture=>matched.has(capture)&&
   !sourceAlternatives(capture.text).some(form=>shortForms.has(form)));
- // Differential evidence (audit A-3): equal output values cannot tell which capture an output value came from (a
- // capture mapped twice could stand in for a dropped capture with the same text). One character of the capture is
- // changed in the event; the capture counts only when the candidate's output for the changed event holds one more
- // value equal to the changed capture text.
- const kept=new Set<CaptureSpan>(counted.filter(capture=>captureCarried(raw,offsets,capture,pool,draft)));
+ // Differential evidence (audit A-3, re-audit F-2): equal output values cannot tell which capture an output value
+ // came from (a capture mapped twice could stand in for a dropped capture with the same text), so each capture must
+ // show that a field holding its text depends on it (captureCarried).
+ const base=scalarPaths(normalized);
+ const kept=new Set<CaptureSpan>(counted.filter(capture=>captureCarried(raw,offsets,capture,base,draft)));
  // A run of value-bearing characters no kept capture covers is lost, except a key name the expression reads as literal
  // text right before `=` and a kept capture of exactly that name (`arch=(?<arch>\S+)`): the field name preserves it.
  // A key not spelled exactly like its capture name (`src-ip`, a Hangul key read as `___`) is never exempt (audit A-2).
@@ -260,8 +272,9 @@ export function accountEventResiduals(raw:string,normalized:Record<string,unknow
   const closeRun=()=>{
    if(!run)return;
    const current=run;run=null;
-   const exempt=!current.covered&&raw[current.end]==='='&&
-    keyCapture(raw.slice(current.start,current.end),offsets[current.end+1]!);
+   const valueStart=keyValueStart(raw,current.end);
+   const exempt=!current.covered&&valueStart!==null&&
+    keyCapture(raw.slice(current.start,current.end),offsets[valueStart]!);
    if(exempt||regionLost)return;
    regionLost=true;
    firstUnaccounted??={startByte:offsets[current.start]!,endByte:offsets[current.end]!};
@@ -285,21 +298,41 @@ export function accountEventResiduals(raw:string,normalized:Record<string,unknow
   ...(missing?{reason,firstUnaccounted}:{})};
 }
 
-function countForms(pool:string[],forms:string[]):number{
- let count=0;for(const value of pool)if(forms.includes(value))count++;
- return count;
+/** Every scalar of a parser output by its exact path (the strings `scalarValues` compares with source text). */
+function scalarPaths(value:unknown,path='',out=new Map<string,string>()):Map<string,string>{
+ if(value===null)out.set(path,'null');
+ else if(Array.isArray(value))value.forEach((item,index)=>scalarPaths(item,path+'['+index+']',out));
+ else if(typeof value==='object')for(const [key,item] of Object.entries(value as Record<string,unknown>))
+  scalarPaths(item,path+'.'+JSON.stringify(key),out);
+ else if(value!==undefined)out.set(path,String(value));
+ return out;
 }
+/** Probe positions: the last, the first and the middle changeable character first, then the others from the end. */
+function probeOrder<T>(options:T[]):T[]{
+ if(options.length<3)return options;
+ const order=[options.length-1,0,options.length>>1];
+ for(let index=options.length-2;index>0;index--)if(!order.includes(index))order.push(index);
+ return order.map(index=>options[index]!);
+}
+const MAX_PROBES=8;
 /**
- * Whether a change of one character inside the capture reaches the candidate's output as that same change. A change
- * is conclusive when the changed event still matches with the capture reading the changed text and the event still
- * has output; up to six positions are tried. When no change is conclusive (a capture of fixed words such as
- * `(?<proto>TCP|UDP)`, or punctuation only), the capture is decided by the count rule alone.
+ * Whether the capture's own text reaches the candidate's output (independent re-audit F-2/F-3 of 4c04b0b). The output
+ * fields that hold the capture text exactly (or a decoded form of it) are the candidate holders. One character of the
+ * capture is changed in the event; the probe is conclusive when the changed event still matches with the capture
+ * reading the changed text and still has output. The capture is carried when that change alters at least one holder:
+ * a field holding exactly this text depends on this capture. A twin capture with the same text, a copy mapped twice or
+ * a cast that rewrites the value (`0443` to 443) does not make a holder depend on a dropped capture; a changed value
+ * that fails its cast (`true` to `truf`) still alters the holder, so a lossless typed value is not refused.
+ * One conclusive probe decides. When no probe is conclusive (a capture of fixed words such as `(?<proto>TCP|UDP)`, or
+ * punctuation only), the capture is decided by the count rule alone.
  */
-function captureCarried(raw:string,offsets:number[],capture:CaptureSpan,pool:string[],draft:ParserDraft):boolean{
+function captureCarried(raw:string,offsets:number[],capture:CaptureSpan,base:Map<string,string>,draft:ParserDraft):boolean{
  const start=indexOfByte(offsets,capture.startByte),end=indexOfByte(offsets,capture.endByte);
  if(start<0||end<start||raw.slice(start,end)!==capture.text)return false;
- let conclusive=false;
- for(const option of substitutions(capture.text).slice(0,6)){
+ const forms=sourceAlternatives(capture.text);
+ const holders=[...base].filter(([,value])=>forms.includes(value)).map(([path])=>path);
+ if(!holders.length)return false;
+ for(const option of probeOrder(substitutions(capture.text).reverse()).slice(0,MAX_PROBES)){
   const text=capture.text.slice(0,option.index)+option.replacement+capture.text.slice(option.index+option.width);
   const changed=raw.slice(0,start)+text+raw.slice(end);
   const spans=regexCaptureSpans(changed,draft);
@@ -309,11 +342,10 @@ function captureCarried(raw:string,offsets:number[],capture:CaptureSpan,pool:str
   try{const events=preview(changed,draft).events;normalized=events.length===1?events[0]!.normalized:undefined;}
   catch{normalized=undefined;}
   if(!normalized)continue;
-  conclusive=true;
-  const forms=sourceAlternatives(text);
-  if(countForms(scalarValues(normalized),forms)>countForms(pool,forms))return true;
+  const after=scalarPaths(normalized);
+  return holders.some(path=>after.get(path)!==base.get(path));
  }
- return !conclusive;
+ return true;
 }
 
 /** Account the residual regions of a candidate's batch output (for tests, the suite can be supplied). */
@@ -325,6 +357,10 @@ export function accountResidualRegionsForSuite(suite:SuiteResult,draft:ParserDra
   if(!regions.length)continue;
   const event=suite.events[index];
   if(!event){events.push({event:index,method:'unavailable',required:regions.length,missing:0,reason:'EVENT_MISSING'});continue;}
+  if(events.some(item=>item.missing>0)){
+   // One unaccounted region already refuses the candidate; later events are not evaluated (re-audit F-7).
+   events.push({event:index,method:'unavailable',required:regions.length,missing:0,reason:'NOT_EVALUATED'});continue;
+  }
   events.push(accountEventResiduals(event.raw,event.normalized,draft,regions,index));
  }
  return {contract:RESIDUAL_PROVENANCE_CONTRACT,events};

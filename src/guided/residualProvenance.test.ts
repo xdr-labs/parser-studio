@@ -38,7 +38,7 @@ describe('Squid access log (multi-token residual regions)',()=>{
  });
  it('refuses a recipe that reads the request method as literal text',()=>{
   const result=account(SQUID,regexDraft(SQUID_PATTERN.replace('(?<method>[A-Z]+)','GET')),SQUID_RESIDUALS);
-  expect(result.events.map(event=>event.missing)).toEqual([1,1]);
+  expect(result.events.map(event=>[event.missing,event.reason])).toEqual([[1,expect.any(String)],[0,'NOT_EVALUATED']]);
  });
  it('refuses a capture inside a repetition, which keeps only its last iteration',()=>{
   // The preview gate already refuses unbounded nested repetition; a bounded one passes it and reaches this check.
@@ -76,13 +76,13 @@ describe('Cisco ASA free text',()=>{
   // loses it unless an enclosing capture keeps the whole code (independent audit A-1).
   const pattern=String.raw`^%(?<facility>[A-Z]+)-(?<severity>\d)-(?<message_id>\d+): (?<message>(?<action>\w+) (?<detail>.+))$`;
   const result=account(ASA,regexDraft(pattern),whole);
-  expect(result.events.map(event=>event.missing)).toEqual([1,1]);
+  expect(result.events.map(event=>[event.missing,event.reason])).toEqual([[1,expect.any(String)],[0,'NOT_EVALUATED']]);
   expect(result.events[0]!.firstUnaccounted).toEqual({startByte:4,endByte:5});
  });
  it('refuses a recipe that reads the facility as literal pattern text',()=>{
   const pattern=String.raw`^%ASA-(?<severity>\d)-(?<message_id>\d+): (?<message>(?<action>\w+) (?<detail>.+))$`;
   const result=account(ASA,regexDraft(pattern),whole);
-  expect(result.events.map(event=>event.missing)).toEqual([1,1]);
+  expect(result.events.map(event=>[event.missing,event.reason])).toEqual([[1,expect.any(String)],[0,'NOT_EVALUATED']]);
   expect(result.events[0]!.firstUnaccounted).toEqual({startByte:1,endByte:5});
  });
  it('refuses a recipe that reads fixed message words outside every capture',()=>{
@@ -111,13 +111,13 @@ describe('Linux auditd records',()=>{
  });
  it('refuses a key read as literal text before a capture of another name (the source field name is lost)',()=>{
   const result=account(AUDIT,regexDraft(LOSSLESS.replace('type=(?<type>','type=(?<event_type>')),whole);
-  expect(result.events.map(event=>[event.method,event.missing])).toEqual([['capture_spans',1],['capture_spans',1]]);
+  expect(result.events.map(event=>[event.method,event.missing])).toEqual([['capture_spans',1],['unavailable',0]]);
   expect(result.events[0]!.firstUnaccounted).toEqual({startByte:0,endByte:4});
  });
  it('refuses a fixed word read as literal text outside every capture',()=>{
   const pattern=LOSSLESS.replace('msg=(?<msg>audit\\((?<audit_time>','msg=audit\\((?<audit_time>').replace('(?<audit_serial>\\d+)\\)):','(?<audit_serial>\\d+)\\):');
   const result=account(AUDIT,regexDraft(pattern),whole);
-  expect(result.events.map(event=>[event.method,event.missing])).toEqual([['capture_spans',1],['capture_spans',1]]);
+  expect(result.events.map(event=>[event.method,event.missing])).toEqual([['capture_spans',1],['unavailable',0]]);
   expect(result.events[0]!.firstUnaccounted).toEqual({startByte:13,endByte:16});
  });
 });
@@ -156,7 +156,7 @@ describe('independent audit of 240b2e6 (A-1 signs and separators, A-2 key names,
    ['ratio .5 ok',String.raw`^ratio \.(?<ratio>\d) (?<result>\S+)$`,'.','.5'],
    ['peer ::1 ok',String.raw`^peer ::(?<peer>\d) (?<result>\S+)$`,'::','::1'],
    ['zone GMT+9 ok',String.raw`^zone (?<zone>[A-Z]+)\+(?<offset>\d) (?<result>\S+)$`,'+','GMT+9'],
-   ['check user!=root ok',String.raw`^check (?<field>[a-z]+)!=(?<value>\S+) (?<result>\S+)$`,'!','user!=root'],
+   ['check user!=root ok',String.raw`^check (?<field>[a-z]+)!=(?<value>\S+) (?<result>\S+)$`,'!=','user!=root'],
   ];
   for(const [source,pattern,lost,value] of cases){
    const at=source.indexOf(lost);
@@ -196,6 +196,71 @@ describe('independent audit of 240b2e6 (A-1 signs and separators, A-2 key names,
   const source='proto TCP port 443';
   const pattern=String.raw`^proto (?<proto>TCP|UDP) port (?<port>\d+)$`;
   expect(account(source,regexDraft(pattern),[['TCP','443']]).events[0]).toMatchObject({required:2,missing:0});
+ });
+});
+
+describe('independent re-audit of 4c04b0b (F-2 field identity, F-3 typed casts, F-4 signs and operators, F-5 keys)',()=>{
+ const mapped=(pattern:string,mappings:{source:string;target:string;type:string}[],preserve=true)=>
+  regexDraft(pattern,{preserveUnmapped:preserve?true:undefined,mappings:mappings.map((item,index)=>({id:'m'+index,...item}))} as Partial<ParserDraft>);
+ it('F-2: a twin copy cannot pay for a capture whose cast rewrites its text',()=>{
+  const source='sport=0443 dport=0443 user=alice';
+  const pattern=String.raw`^sport=(?<sport>\d+) dport=(?<dport>\d+) user=(?<user>\S+)$`;
+  const twin=mapped(pattern,[{source:'sport',target:'sport_text',type:'string'},{source:'sport',target:'sport_copy',type:'string'},
+   {source:'dport',target:'dstport',type:'port'}]);
+  const output=JSON.stringify(preview(source,twin).events[0]!.normalized);
+  expect(output.split('"0443"').length-1).toBe(2);
+  // The dport key is exempt only with a kept dport capture, so the refusal starts at the key.
+  const at=source.indexOf('dport');
+  expect(account(source,twin,[[source]]).events[0]).toMatchObject({missing:1,firstUnaccounted:{startByte:at,endByte:at+5}});
+  const kept=mapped(pattern,[{source:'sport',target:'sport_text',type:'string'},{source:'dport',target:'dstport',type:'string'}]);
+  expect(account(source,kept,[[source]]).events[0]!.missing).toBe(0);
+ });
+ it('F-2: a capture with a fixed suffix is probed where it can change',()=>{
+  const source='host fw01.example.com peer fw01.example.com';
+  const pattern=String.raw`^host (?<host>[a-z0-9]+\.example\.com) peer (?<peer>[a-z0-9]+\.example\.com)$`;
+  const twice=mapped(pattern,[{source:'host',target:'host_a',type:'string'},{source:'host',target:'host_b',type:'string'}],false);
+  expect(account(source,twice,[['fw01.example.com','fw01.example.com']]).events[0]).toMatchObject({required:2,missing:1});
+  const both=mapped(pattern,[{source:'host',target:'host_a',type:'string'},{source:'peer',target:'host_b',type:'string'}],false);
+  expect(account(source,both,[['fw01.example.com','fw01.example.com']]).events[0]!.missing).toBe(0);
+ });
+ it('F-3: lossless typed values whose changed text fails the cast are accepted',()=>{
+  const cases:[string,string,{source:string;target:string;type:string}[]][]=[
+   ['src=192.0.2.10 dst=255.255.255.255 proto=udp',String.raw`^src=(?<src>\S+) dst=(?<dst>\S+) proto=(?<proto>\S+)$`,
+    [{source:'src',target:'srcip',type:'ip'},{source:'dst',target:'dstip',type:'ip'}]],
+   ['user=alice admin=true',String.raw`^user=(?<user>\S+) admin=(?<admin>\S+)$`,[{source:'admin',target:'is_admin',type:'boolean'}]],
+   ['dport=65535 user=bob',String.raw`^dport=(?<dport>\d+) user=(?<user>\S+)$`,[{source:'dport',target:'dstport',type:'port'}]],
+  ];
+  for(const [source,pattern,mappings] of cases)
+   expect(account(source,mapped(pattern,mappings),[[source]]).events[0],source).toMatchObject({method:'capture_spans',missing:0});
+ });
+ it('F-4: a sign before a word, a plus and an operator are refused when read as pattern text',()=>{
+  const cases:[string,string,string][]=[
+   ['val -inf ok',String.raw`^val -(?<v>[a-z]+) (?<result>\S+)$`,'-'],
+   ['lang C++ ok',String.raw`^lang (?<lang>[A-Z])\+\+ (?<result>\S+)$`,'++'],
+   ['test x<=5 ok',String.raw`^test (?<field>[a-z])<=(?<limit>\d) (?<result>\S+)$`,'<='],
+  ];
+  for(const [source,pattern,lost] of cases){
+   const value=source.split(' ')[1]!;const at=source.indexOf(lost);
+   expect(account(source,regexDraft(pattern),[[value]]).events[0],source).toMatchObject({missing:1,
+    firstUnaccounted:{startByte:at,endByte:at+lost.length}});
+  }
+ });
+ it('F-5: a key before a quoted or bracketed value or with blanks around = keeps its exemption',()=>{
+  const cases:[string,string][]=[
+   ['devname="fw01" action=allow',String.raw`^devname="(?<devname>[^"]*)" action=(?<action>\S+)$`],
+   ['user=[alice] action=allow',String.raw`^user=\[(?<user>[^\]]*)\] action=(?<action>\S+)$`],
+   ['user = alice',String.raw`^user = (?<user>\S+)$`],
+  ];
+  for(const [source,pattern] of cases)
+   expect(account(source,regexDraft(pattern),[[source]]).events[0],source).toMatchObject({method:'capture_spans',missing:0});
+  expect(account('user="alice"',regexDraft(String.raw`^user="(?<name>[^"]*)"$`),[['user="alice"']]).events[0]!.missing).toBe(1);
+ });
+ it('F-7: events after the first unaccounted one are not evaluated',()=>{
+  const source='login alice ok\nlogin bob ok\nlogin carol ok';
+  const lossy=regexDraft(String.raw`^login (?<user>\S+) ok$`);
+  const regions=source.split('\n').map(line=>locateResidualRegions(line,[line.slice(5)])!);
+  expect(accountResidualRegions(source,lossy,regions).events.map(event=>[event.missing,event.reason])).toEqual([
+   [1,'UNACCOUNTED_SOURCE'],[0,'NOT_EVALUATED'],[0,'NOT_EVALUATED']]);
  });
 });
 
@@ -259,7 +324,8 @@ describe('evidence scope',()=>{
   expect(bearing('::1')).toBe(true);
   expect(bearing('::1',1)).toBe(true);
   expect(bearing('!=')).toBe(true);
-  expect(bearing('!=',1)).toBe(false);
+  // An `=` inside an operator is part of it (re-audit F-4/F-8): `!=`, `<=`, `>=`.
+  expect(bearing('!=',1)).toBe(true);
   expect(bearing('.html')).toBe(false);
   expect(bearing(':80')).toBe(false);
   expect(bearing(':y')).toBe(false);
