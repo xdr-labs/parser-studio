@@ -67,19 +67,27 @@ describe('Cisco ASA free text',()=>{
   '%ASA-6-302014: Teardown TCP connection 123456 for outside:203.0.113.5/443 to inside:192.168.1.5/51515 duration 0:00:30 bytes 6123 TCP FINs';
  const whole=ASA.split('\n').map(line=>[line]);
  it('accepts a recipe that keeps the message text whole and reads its values in nested captures',()=>{
-  const pattern=String.raw`^%(?<facility>[A-Z]+)-(?<severity>\d)-(?<message_id>\d+): (?<message>(?<action>\w+) (?<detail>.+))$`;
+  const pattern=String.raw`^%(?<asa_code>(?<facility>[A-Z]+)-(?<severity>\d)-(?<message_id>\d+)): (?<message>(?<action>\w+) (?<detail>.+))$`;
   const result=account(ASA,regexDraft(pattern),whole);
   expect(result.events.map(event=>[event.method,event.missing])).toEqual([['capture_spans',0],['capture_spans',0]]);
+ });
+ it('refuses a recipe that splits the message code at its dashes without keeping the code whole',()=>{
+  // A dash between a word and a digit may be a sign (`10:00:00-05:00`), so a recipe that reads it as pattern text
+  // loses it unless an enclosing capture keeps the whole code (independent audit A-1).
+  const pattern=String.raw`^%(?<facility>[A-Z]+)-(?<severity>\d)-(?<message_id>\d+): (?<message>(?<action>\w+) (?<detail>.+))$`;
+  const result=account(ASA,regexDraft(pattern),whole);
+  expect(result.events.map(event=>event.missing)).toEqual([1,1]);
+  expect(result.events[0]!.firstUnaccounted).toEqual({startByte:4,endByte:5});
  });
  it('refuses a recipe that reads the facility as literal pattern text',()=>{
   const pattern=String.raw`^%ASA-(?<severity>\d)-(?<message_id>\d+): (?<message>(?<action>\w+) (?<detail>.+))$`;
   const result=account(ASA,regexDraft(pattern),whole);
   expect(result.events.map(event=>event.missing)).toEqual([1,1]);
-  expect(result.events[0]!.firstUnaccounted).toEqual({startByte:1,endByte:4});
+  expect(result.events[0]!.firstUnaccounted).toEqual({startByte:1,endByte:5});
  });
  it('refuses a recipe that reads fixed message words outside every capture',()=>{
   const teardown=ASA.split('\n')[1]!;
-  const pattern=String.raw`^%(?<facility>[A-Z]+)-(?<severity>\d)-(?<message_id>\d+): (?<action>\w+) (?<protocol>[A-Z]+) connection (?<detail>.+)$`;
+  const pattern=String.raw`^%(?<asa_code>(?<facility>[A-Z]+)-(?<severity>\d)-(?<message_id>\d+)): (?<action>\w+) (?<protocol>[A-Z]+) connection (?<detail>.+)$`;
   const result=account(teardown,regexDraft(pattern),[[teardown]]);
   const at=teardown.indexOf('connection');
   expect(result.events[0]).toMatchObject({missing:1,firstUnaccounted:{startByte:at,endByte:at+10}});
@@ -133,6 +141,64 @@ describe('literal digits and signs (verification D-1)',()=>{
  });
 });
 
+describe('independent audit of 240b2e6 (A-1 signs and separators, A-2 key names, A-3 capture identity)',()=>{
+ it('A-1: refuses a recipe that drops the sign of an ISO time zone offset, accepts one that keeps it',()=>{
+  const source='2026-11-25T10:00:00-05:00 user=alice action=login';
+  const lossy=String.raw`^(?<ts>\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)-(?<tz>\d\d:\d\d) user=(?<user>\S+) action=(?<action>\S+)$`;
+  expect(account(source,regexDraft(lossy),[[source]]).events[0]).toMatchObject({method:'capture_spans',missing:1,
+   reason:'UNACCOUNTED_SOURCE',firstUnaccounted:{startByte:19,endByte:20}});
+  const lossless=lossy.replace(')-(?<tz>\\d',')(?<tz>[-+]\\d');
+  expect(account(source,regexDraft(lossless),[[source]]).events[0]).toMatchObject({method:'capture_spans',missing:0});
+ });
+ it('A-1: refuses decimal points, IPv6 colons and operators read as pattern text',()=>{
+  // Only the value is residual: the fixed words around it were parsed before.
+  const cases:[string,string,string,string][]=[
+   ['ratio .5 ok',String.raw`^ratio \.(?<ratio>\d) (?<result>\S+)$`,'.','.5'],
+   ['peer ::1 ok',String.raw`^peer ::(?<peer>\d) (?<result>\S+)$`,'::','::1'],
+   ['zone GMT+9 ok',String.raw`^zone (?<zone>[A-Z]+)\+(?<offset>\d) (?<result>\S+)$`,'+','GMT+9'],
+   ['check user!=root ok',String.raw`^check (?<field>[a-z]+)!=(?<value>\S+) (?<result>\S+)$`,'!','user!=root'],
+  ];
+  for(const [source,pattern,lost,value] of cases){
+   const at=source.indexOf(lost);
+   expect(account(source,regexDraft(pattern),[[value]]).events[0],source).toMatchObject({missing:1,
+    firstUnaccounted:{startByte:at,endByte:at+lost.length}});
+  }
+ });
+ it('A-2: a non-ASCII key read as pattern text before a differently named capture is lost',()=>{
+  const key='\uC0AC\uC6A9\uC790';
+  const source=`${key}=kim action=login`;
+  const pattern=String.raw`^`+key+String.raw`=(?<___>\S+) action=(?<action>\S+)$`;
+  expect(account(source,regexDraft(pattern),[[source]]).events[0]).toMatchObject({missing:1,
+   firstUnaccounted:{startByte:0,endByte:bytes(key)}});
+ });
+ it('A-2: a key with a dash is not exempt for a capture spelled with an underscore',()=>{
+  const source='src-ip=192.0.2.1 action=allow';
+  const pattern=String.raw`^src-ip=(?<src_ip>[0-9.]+) action=(?<action>\S+)$`;
+  expect(account(source,regexDraft(pattern),[[source]]).events[0]!.missing).toBe(1);
+ });
+ it('A-3: a capture mapped twice cannot pay for a dropped capture with the same text',()=>{
+  const source='tz -0500 offset -0500';
+  const pattern=String.raw`^tz (?<tz>\S+) offset (?<offset>\S+)$`;
+  const duplicated=regexDraft(pattern,{preserveUnmapped:undefined,mappings:[
+   {id:'tz',source:'tz',target:'custom.tz',type:'string'},
+   {id:'tz-again',source:'tz',target:'custom.offset',type:'string'}]});
+  const event=preview(source,duplicated).events[0]!;
+  expect(JSON.stringify(event.normalized).split('"-0500"').length-1).toBe(2);
+  const values=[['-0500','-0500']];
+  expect(account(source,duplicated,values).events[0]).toMatchObject({required:2,missing:1,reason:'CAPTURE_NOT_IN_OUTPUT',
+   firstUnaccounted:{startByte:source.lastIndexOf('-0500'),endByte:source.length}});
+  const both=regexDraft(pattern,{preserveUnmapped:undefined,mappings:[
+   {id:'tz',source:'tz',target:'custom.tz',type:'string'},
+   {id:'offset',source:'offset',target:'custom.offset',type:'string'}]});
+  expect(account(source,both,values).events[0]!.missing).toBe(0);
+ });
+ it('A-3: a capture of fixed words that cannot be changed is decided by the count rule',()=>{
+  const source='proto TCP port 443';
+  const pattern=String.raw`^proto (?<proto>TCP|UDP) port (?<port>\d+)$`;
+  expect(account(source,regexDraft(pattern),[['TCP','443']]).events[0]).toMatchObject({required:2,missing:0});
+ });
+});
+
 describe('values that belong to the event',()=>{
  it('refuses an output that holds another event\'s value instead of this event\'s capture',()=>{
   const source='login alice ok\nlogin bob ok';
@@ -174,16 +240,31 @@ describe('evidence scope',()=>{
   expect(accountResidualRegions(KOREAN_USER,draft,[[{startByte:1,endByte:9}]]).events[0]).toMatchObject({method:'unavailable',reason:'INVALID_REGION'});
  });
  it('classifies signs, separators and null placeholders',()=>{
-  const text='2026-11-24 -0500 +09 a=-5 x - y TCP_MISS/200 1.5';
+  const text='2026-11-24 -0500 +09 a=-5 x - y TCP_MISS/200 1.5 GMT+9 1e-5 -.5 ::1 user!=root index.html host:80 for x:y 50% ==';
   const bearing=(needle:string,offset=0)=>isValueBearing(text,text.indexOf(needle)+offset);
-  expect(bearing('-11')).toBe(false);
+  // A dash between digits may be a sign (`10:00:00-05:00`): date parts are captured whole (audit A-1).
+  expect(bearing('-11')).toBe(true);
   expect(bearing('-0500')).toBe(true);
   expect(bearing('+09')).toBe(true);
   expect(bearing('=-5',1)).toBe(true);
+  expect(bearing('=-5')).toBe(false);
   expect(bearing(' - ',1)).toBe(false);
   expect(bearing('/200')).toBe(false);
   expect(bearing('_MISS')).toBe(true);
-  expect(bearing('.5')).toBe(false);
+  expect(bearing('.5 ')).toBe(true);
+  expect(bearing('+9 ')).toBe(true);
+  expect(bearing('e-5',1)).toBe(true);
+  expect(bearing('-.5')).toBe(true);
+  expect(bearing('-.5',1)).toBe(true);
+  expect(bearing('::1')).toBe(true);
+  expect(bearing('::1',1)).toBe(true);
+  expect(bearing('!=')).toBe(true);
+  expect(bearing('!=',1)).toBe(false);
+  expect(bearing('.html')).toBe(false);
+  expect(bearing(':80')).toBe(false);
+  expect(bearing(':y')).toBe(false);
+  expect(bearing('% ')).toBe(true);
+  expect(bearing('==')).toBe(true);
   expect(utf8Offsets('a김b')).toEqual([0,1,4,5]);
  });
 });

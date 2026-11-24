@@ -53,8 +53,10 @@ test('Auto Parser applies a lossless ChatGPT recovery across multi-token residua
     if(!await attest.isChecked())await attest.check();
     await ai.getByRole('button',{name:'Test Proposed Fix'}).click();
   }
-  // Lossy replies: the HIER_ prefix, the request method and the status digits read as literal pattern text.
+  // Lossy replies: the HIER_ prefix, the TCP_ prefix and the decimal point of the time read as literal pattern text
+  // (independent audit A-1: a decimal point is part of the value unless an enclosing capture keeps it).
   for(const lossy of [PATTERN.replace(' (?<hierarchy>[A-Z_]+)/',' HIER_(?<hierarchy>[A-Z_]+)/'),
+    PATTERN.replace('(?<time>\\d+\\.\\d{3})','(?<time>\\d+)\\.(?<time_ms>\\d{3})'),
     PATTERN.replace('(?<code>[A-Z_]+)/(?<status>\\d{3})','TCP_(?<code>[A-Z_]+)/(?<status>\\d{3})')]){
     await test_(lossy);
     await expect(status.filter({hasText:'Fix not applied'})).toContainText('previously unparsed source regions outside the final parser output');

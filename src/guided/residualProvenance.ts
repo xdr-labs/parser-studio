@@ -65,9 +65,31 @@ export function utf8Offsets(text:string):number[]{
  return offsets;
 }
 
+function codePointBefore(text:string,index:number):string|undefined{
+ if(index<=0)return undefined;
+ const before=text.codePointAt(index-1)!;
+ const point=before>=0xdc00&&before<=0xdfff&&index>=2?text.codePointAt(index-2)!:before;
+ return String.fromCodePoint(point);
+}
+function codePointAfter(text:string,index:number):string|undefined{
+ const point=text.codePointAt(index);
+ if(point===undefined)return undefined;
+ const next=text.codePointAt(index+(point>0xffff?2:1));
+ return next===undefined?undefined:String.fromCodePoint(next);
+}
+const isDigit=(ch:string|undefined)=>ch!==undefined&&DIGIT.test(ch);
+// Punctuation that only separates values: a pattern may read it as literal text outside every capture.
+const SEPARATORS=new Set(['/','|',',',';','"',"'",'[',']','(',')','{','}','@','?','&','\\']);
+
 /**
- * Whether the character at `index` carries value: letters, digits, marks, `_` and every non-ASCII non-space
- * character, and a + or - that starts a number (preceded by no word character, followed by a digit).
+ * Whether the character at `index` carries value, so that a pattern may not read it as literal text outside every
+ * capture: letters, digits, marks, `_` and every non-ASCII non-space character; a `+` or `-` before a digit or a
+ * decimal point (a sign, also inside `-05:00`, `GMT+9`, `1e-5`, `-.5`); a `.` next to a digit or another `.` (`.5`,
+ * `1.2.3.4`); a `:` next to another `:` (IPv6 `::1`) or between two digits (`10:00`, `1.2.3.4:443`); a `%` next to a
+ * digit; an `=` next to another `=`; and any punctuation that is not a plain separator (`!`, `<`, `>`, `~`, `^`, `*`,
+ * `$`, `#`: `!=` is not `=`). White space, a lone `-` placeholder and the separators above are syntax. A token such as
+ * `10:00:00`, `ASA-6-302013` or `1.2.3.4:443` is split losslessly by capturing it whole and nesting the part captures
+ * inside it (independent audit A-1 of 240b2e6).
  */
 export function isValueBearing(text:string,index:number):boolean{
  const point=text.codePointAt(index);
@@ -75,13 +97,36 @@ export function isValueBearing(text:string,index:number):boolean{
  const ch=String.fromCodePoint(point);
  if(SPACE.test(ch))return false;
  if(WORD.test(ch)||point>0x7f)return true;
- if(ch!=='-'&&ch!=='+')return false;
- const next=text.codePointAt(index+1);
- if(next===undefined||!DIGIT.test(String.fromCodePoint(next)))return false;
- if(index===0)return true;
- const before=text.codePointAt(index-1)!;
- const previous=before>=0xdc00&&before<=0xdfff&&index>=2?text.codePointAt(index-2)!:before;
- return !WORD.test(String.fromCodePoint(previous));
+ const previous=codePointBefore(text,index),next=codePointAfter(text,index);
+ switch(ch){
+  case '-':case '+':return isDigit(next)||next==='.';
+  case '.':return isDigit(previous)||isDigit(next)||previous==='.'||next==='.';
+  case ':':return previous===':'||next===':'||(isDigit(previous)&&isDigit(next));
+  case '%':return isDigit(previous)||isDigit(next);
+  case '=':return previous==='='||next==='=';
+  default:return !SEPARATORS.has(ch);
+ }
+}
+
+const LETTER=/\p{L}/u;
+/** One character of `text` replaced by another of the same class, from the end of the text first. */
+function substitutions(text:string):{index:number;width:number;replacement:string}[]{
+ const out:{index:number;width:number;replacement:string}[]=[];
+ for(let index=0;index<text.length;){
+  const point=text.codePointAt(index)!;const width=point>0xffff?2:1;
+  let replacement:number|null=null;
+  if(point>=0x30&&point<=0x39)replacement=point===0x39?0x38:point+1;
+  else if((point>=0x41&&point<=0x5a)||(point>=0x61&&point<=0x7a))replacement=point===0x5a||point===0x7a?point-1:point+1;
+  else if(point===0x2d)replacement=0x2b;
+  else if(point===0x2b)replacement=0x2d;
+  else if(point>0x7f&&LETTER.test(String.fromCodePoint(point))){
+   if(LETTER.test(String.fromCodePoint(point+1)))replacement=point+1;
+   else if(LETTER.test(String.fromCodePoint(point-1)))replacement=point-1;
+  }
+  if(replacement!==null)out.push({index,width,replacement:String.fromCodePoint(replacement)});
+  index+=width;
+ }
+ return out.reverse();
 }
 
 function captureInsideRepetition(node:PortableRegexNode,repeated=false):boolean{
@@ -197,12 +242,18 @@ export function accountEventResiduals(raw:string,normalized:Record<string,unknow
   const found=pool.findIndex((value,index)=>!used[index]&&forms.includes(value));
   if(found>=0){used[found]=true;matched.add(capture);}else for(const form of forms)shortForms.add(form);
  }
- const kept=new Set(touching.filter(capture=>matched.has(capture)&&
-  !sourceAlternatives(capture.text).some(form=>shortForms.has(form))));
+ const counted=touching.filter(capture=>matched.has(capture)&&
+  !sourceAlternatives(capture.text).some(form=>shortForms.has(form)));
+ // Differential evidence (audit A-3): equal output values cannot tell which capture an output value came from (a
+ // capture mapped twice could stand in for a dropped capture with the same text). One character of the capture is
+ // changed in the event; the capture counts only when the candidate's output for the changed event holds one more
+ // value equal to the changed capture text.
+ const kept=new Set<CaptureSpan>(counted.filter(capture=>captureCarried(raw,offsets,capture,pool,draft)));
  // A run of value-bearing characters no kept capture covers is lost, except a key name the expression reads as literal
- // text right before `=` and a kept capture of the same name (`arch=(?<arch>\S+)`): the field name preserves it.
+ // text right before `=` and a kept capture of exactly that name (`arch=(?<arch>\S+)`): the field name preserves it.
+ // A key not spelled exactly like its capture name (`src-ip`, a Hangul key read as `___`) is never exempt (audit A-2).
  const keyCapture=(key:string,valueStart:number)=>evidence.captures.some(capture=>kept.has(capture)&&
-  capture.startByte===valueStart&&capture.name===key.replace(/[^A-Za-z0-9_]/g,'_'));
+  capture.startByte===valueStart&&capture.name===key);
  let missing=0;let firstUnaccounted:{startByte:number;endByte:number}|undefined;let reason:ResidualRefusal|undefined;
  for(const span of spans){
   let regionLost=false;let run=null as {start:number;end:number;covered:boolean}|null;
@@ -232,6 +283,37 @@ export function accountEventResiduals(raw:string,normalized:Record<string,unknow
  }
  return {event,method:'capture_spans',required,missing,
   ...(missing?{reason,firstUnaccounted}:{})};
+}
+
+function countForms(pool:string[],forms:string[]):number{
+ let count=0;for(const value of pool)if(forms.includes(value))count++;
+ return count;
+}
+/**
+ * Whether a change of one character inside the capture reaches the candidate's output as that same change. A change
+ * is conclusive when the changed event still matches with the capture reading the changed text and the event still
+ * has output; up to six positions are tried. When no change is conclusive (a capture of fixed words such as
+ * `(?<proto>TCP|UDP)`, or punctuation only), the capture is decided by the count rule alone.
+ */
+function captureCarried(raw:string,offsets:number[],capture:CaptureSpan,pool:string[],draft:ParserDraft):boolean{
+ const start=indexOfByte(offsets,capture.startByte),end=indexOfByte(offsets,capture.endByte);
+ if(start<0||end<start||raw.slice(start,end)!==capture.text)return false;
+ let conclusive=false;
+ for(const option of substitutions(capture.text).slice(0,6)){
+  const text=capture.text.slice(0,option.index)+option.replacement+capture.text.slice(option.index+option.width);
+  const changed=raw.slice(0,start)+text+raw.slice(end);
+  const spans=regexCaptureSpans(changed,draft);
+  if(!('captures' in spans)||!spans.captures.some(item=>item.name===capture.name&&
+   item.startByte===capture.startByte&&item.text===text))continue;
+  let normalized:Record<string,unknown>|undefined;
+  try{const events=preview(changed,draft).events;normalized=events.length===1?events[0]!.normalized:undefined;}
+  catch{normalized=undefined;}
+  if(!normalized)continue;
+  conclusive=true;
+  const forms=sourceAlternatives(text);
+  if(countForms(scalarValues(normalized),forms)>countForms(pool,forms))return true;
+ }
+ return !conclusive;
 }
 
 /** Account the residual regions of a candidate's batch output (for tests, the suite can be supplied). */

@@ -122,16 +122,19 @@ function bytesText(raw:string,region:ResidualRegion):string|null{
  try{return new TextDecoder('utf-8',{fatal:true}).decode(new TextEncoder().encode(raw).slice(region.startByte,region.endByte));}
  catch{return null;}
 }
-/** Byte regions of each event's residual texts: the exact Multi-Pass ranges when they hold the same text, else the
- * texts located left to right in the candidate's event. */
-function residualRegionsFor(suite:SuiteResult,texts:string[][],exact?:ResidualRegion[][]):ResidualRegion[][]{
+/** Byte regions of each event's residual texts: the exact Multi-Pass ranges when they hold the same text. Texts are
+ * located left to right in the candidate's event only when no exact ranges exist; exact ranges that do not fit the
+ * candidate's event give no regions, so that event keeps the strict whole-value rule (independent audit S-1: a
+ * located text can land on an earlier, already parsed copy of the same text). */
+export function residualRegionsFor(suite:SuiteResult,texts:string[][],exact?:ResidualRegion[][]):ResidualRegion[][]{
  return texts.map((values,index)=>{
   const raw=suite.events[index]?.raw;
   if(raw===undefined)return [];
-  const regions=exact?.[index];
+  if(!exact)return locateResidualRegions(raw,values)??[];
+  const regions=exact[index];
   if(regions&&regions.length===values.length&&regions.every((region,position)=>bytesText(raw,region)===values[position]))
    return regions;
-  return locateResidualRegions(raw,values)??[];
+  return [];
  });
 }
 /** Character-level residual evidence for a regex candidate, computed in the preview worker; null when unavailable. */
@@ -215,7 +218,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      'IMPORTANT: only the manually reviewed excerpt, not the full original source, is included below. Its SHA/event metadata refers to the larger unchanged local source. Do not infer rules for unseen events; if the excerpt is insufficient to establish a complete source grammar, return REVIEW_REQUIRED: and ask for additional approved samples.',
      ...(suite?[]:['No local compiler-ready suite is available in this pane; the returned recipe must be independently validated with the complete original source in ChatGPT Assisted before use.']),
      'Supported recovery grammars are JSON, strict key/value, explicit-column CSV, CEF, LEEF, bounded RFC3164/RFC5424 bodies, allowlisted mixed families, bounded Java stack traces, and bounded named-capture Regex for otherwise unresolved one-line text.',
-     'If a Regex is required, use parse_regex with a pattern no longer than 256 visible characters, at least one named capture, and no backreferences/lookbehind/unsafe nested repetition. Every letter, digit, _ and non-ASCII character of the source, and a sign that starts a number, must be inside a named capture (keep fixed message words by capturing the whole message and nesting the value captures inside it); only white space, punctuation and a key name directly before = and a capture of the same name may stay literal. Grok, scripting, executable Ruby and guessed semantics remain unsupported.');
+     'If a Regex is required, use parse_regex with a pattern no longer than 256 visible characters, at least one named capture, and no backreferences/lookbehind/unsafe nested repetition. Every letter, digit, _ and non-ASCII character of the source, every sign before a digit, every . next to a digit, every : between digits or in ::, every % next to a digit and operators such as != must be inside a named capture (keep fixed message words by capturing the whole message and nesting the value captures inside it; split a token such as ASA-6-302013 or 10:00:00 by capturing it whole with nested part captures); only white space, separators such as / | , ; ( ) [ ] and a key name directly before = and a capture spelled exactly like it may stay literal. Grok, scripting, executable Ruby and guessed semantics remain unsupported.');
    }
   }
   const reviewedHash=await sha256Utf8Hex(reviewedExcerpt);
