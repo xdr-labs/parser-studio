@@ -296,6 +296,16 @@ describe('evidence scope',()=>{
   expect(raw.slice(time.startByte,time.endByte)).toBe('1763859723.123');
   expect(account(raw,draft,[[' TCP_MISS/200 5120 GET ']]).events[0]).toMatchObject({method:'capture_spans',missing:0});
  });
+ it('reads a tagless RFC 3164 body expression, which has no raw-body reading (audit A-10)',()=>{
+  const raw='<134>May 5 17:51:17 dev01 %FTD-6-302013: Built inbound TCP connection 111 for net:10.10.10.10/53500';
+  const body=raw.slice(raw.indexOf('%FTD'));
+  const lossless=String.raw`^(?<raw>%FTD-\d-\d+: Built (?<direction>\w+) TCP connection (?<connection_id>\d+) for [^:]+:(?<src_ip>[0-9.]+)/(?<src_port>\d+))$`;
+  const draft=regexDraft(lossless,{format:'syslog_rfc3164',syslogBodyFormat:'regex'});
+  expect(account(raw,draft,[[body]]).events[0]).toMatchObject({method:'capture_spans',missing:0});
+  const lossy=String.raw`^%FTD-\d-\d+: Built (?<direction>\w+) TCP connection (?<connection_id>\d+) for [^:]+:(?<src_ip>[0-9.]+)/(?<src_port>\d+)$`;
+  expect(account(raw,regexDraft(lossy,{format:'syslog_rfc3164',syslogBodyFormat:'regex'}),[[body]]).events[0])
+   .toMatchObject({method:'capture_spans',missing:1,firstUnaccounted:{startByte:raw.indexOf('FTD'),endByte:raw.indexOf('FTD')+'FTD-6-302013'.length}});
+ });
  it('reports declarative grammars as unavailable so the strict whole-region rule stays',()=>{
   const draft={...createDraft(),format:'kv'} as ParserDraft;
   expect(accountResidualRegions('a=1 b=2',draft,[[{startByte:0,endByte:7}]]).events[0]).toMatchObject({method:'unavailable',reason:'NOT_REGEX'});

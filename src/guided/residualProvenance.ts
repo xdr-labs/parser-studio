@@ -23,6 +23,7 @@
  */
 import type {ParserDraft,SuiteResult} from '../model';
 import {extractEvent} from '../grammar/extractEvent';
+import {getTag} from '../grammar/primitives';
 import {extractionSettingsOf,preview} from '../parser';
 import {parsePortableRegexAst,portableRegexJavaScriptSource,type PortableRegexNode} from '../../backend/src/portable-regex';
 import {validatePreviewRegexPattern} from '../regexSafety';
@@ -163,8 +164,12 @@ function regexTarget(raw:string,draft:ParserDraft):{text:string;offset:number;pa
  if(draft.format==='regex')return {text:raw,offset:0,pattern};
  if(!usesRegexExtraction(draft))return null;
  const format=draft.format as 'syslog_rfc3164'|'syslog_rfc5424';
- const head=extractEvent(raw,{...extractionSettingsOf(draft,format),syslogBodyFormat:'raw'});
- const message=head.errors.length?undefined:head.fields.message;
+ // The text the body expression read, as the extractor reports it (also for a tagless RFC 3164 message, which has no
+ // raw-body reading: independent audit A-10); else the message of a raw-body reading.
+ const read=extractEvent(raw,extractionSettingsOf(draft,format));
+ const bodyText=read.errors.length?undefined:getTag(read,'bodyText');
+ const head=typeof bodyText==='string'?undefined:extractEvent(raw,{...extractionSettingsOf(draft,format),syslogBodyFormat:'raw'});
+ const message=typeof bodyText==='string'?bodyText:head&&!head.errors.length?head.fields.message:undefined;
  if(typeof message!=='string'||!raw.endsWith(message))return null;
  return {text:message,offset:raw.length-message.length,pattern};
 }
