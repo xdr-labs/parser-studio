@@ -9,6 +9,9 @@ import AutoParserAIReview from './AutoParserAIReview';
 vi.mock('../previewWorkerClient',()=>({
  runInWorker:async(raw:string,draft:import('../model').ParserDraft)=>
    (await import('../parser')).preview(raw,draft),
+ runResidualAccountingInWorker:async(raw:string,draft:import('../model').ParserDraft,
+  regions:import('./residualProvenance').ResidualRegion[][])=>
+   (await import('./residualProvenance')).accountResidualRegions(raw,draft,regions),
 }));
 import type {MultiPassBatchPreview} from './multipassPreviewClient';
 
@@ -243,9 +246,10 @@ it('rejects full recovery when previously unparsed text is read but not kept in 
 
 // Final independent re-audit of 62263b3 (2026-11-24), H-2: the real Multi-Pass evidence of these Squid lines
 // (runtime/multipass preview_batch at 62263b3, copied below) reports multi-token residual regions such as
-// " TCP_MISS/200 5120 GET ". The review keeps a region only when one output value holds it whole, so it still
-// refuses a lossless recipe that reads such a region into several fields (open, it.fails below). Counting words
-// instead let recipes drop literal digits and signs (verification D-1, IIS and Apache tests below).
+// " TCP_MISS/200 5120 GET ". The review accounts for such a region character by character (UTF-8 byte spans of
+// every capture, src/guided/residualProvenance.ts), so a lossless recipe that reads it into several fields passes,
+// while recipes that read source text as literal pattern text are refused (the HIER_ test and the D-1 IIS and
+// Apache tests below).
 const SQUID='1763859723.123    245 192.0.2.51 TCP_MISS/200 5120 GET http://www.example.test/index.html - HIER_DIRECT/198.51.100.10 text/html\n'+
  '1763859724.456     12 192.0.2.52 TCP_DENIED/403 3900 CONNECT blocked.example.test:443 alice HIER_NONE/- text/html';
 const SQUID_HOLDOUT='1763859725.789     77 192.0.2.53 TCP_HIT/200 777 GET http://cdn.example.test/a.js - HIER_NONE/- application/javascript\n'+
@@ -300,8 +304,8 @@ async function squidReview(pattern:string,apply:(draft:import('../model').Parser
  fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
 }
 
-// Known false refusal (re-audit H-2, open): this lossless recipe should pass; it.fails turns green when it does.
-it.fails('accepts a lossless recovery that reads multi-token Multi-Pass residuals into several fields (re-audit H-2)',async()=>{
+// Re-audit H-2 (fixed): this lossless recipe was refused while a region had to be kept whole in one value.
+it('accepts a lossless recovery that reads multi-token Multi-Pass residuals into several fields (re-audit H-2)',async()=>{
  const apply=vi.fn<(draft:import('../model').ParserDraft)=>void>();
  await squidReview(SQUID_PATTERN,apply);
  expect(await screen.findByText(/Fix passed: full parser recovery/)).toBeTruthy();
@@ -319,7 +323,9 @@ it.fails('accepts a lossless recovery that reads multi-token Multi-Pass residual
 it('still rejects a recovery that reads part of a multi-token residual as literal text (re-audit H-2)',async()=>{
  const apply=vi.fn<(draft:import('../model').ParserDraft)=>void>();
  await squidReview(SQUID_PATTERN.replace(' (?<hierarchy>[A-Z_]+)/',' HIER_(?<hierarchy>[A-Z_]+)/'),apply);
- expect(await screen.findByText(/event 1 would leave 3 of 4 previously unparsed source regions outside the final parser output/)).toBeTruthy();
+ // Only the third region (" - HIER_DIRECT/") loses text ("HIER_" is pattern text); the other three are read
+ // into fields whole. The strict whole-region rule reported 3 of 4 here before the H-2 fix.
+ expect(await screen.findByText(/event 1 would leave 1 of 4 previously unparsed source regions outside the final parser output/)).toBeTruthy();
  expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
  expect(apply).not.toHaveBeenCalled();
  vi.unstubAllGlobals();

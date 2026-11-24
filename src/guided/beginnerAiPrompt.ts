@@ -78,6 +78,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
     'ParserRecipe safety contract:',
     'Use only Parser Studio declarative stages: JSON/KV/CEF/LEEF/CSV, supported Syslog wrappers, reviewed parse_generic_structural only when the local backend advertises GENERIC_STRUCTURAL_ULTRA_COMPILER_V15 and the event matches that bounded grammar, bounded split/merge, or bounded parse_regex for otherwise unresolved one-line text.',
     'For parse_regex: pattern must be at most 256 visible characters, contain one or more unique named captures (?<field>...), and must not use backreferences, lookbehind, unsafe nested repetition or excessive repetition bounds.',
+    'In parse_regex every letter, digit, _ and non-ASCII character of the source, and a sign that starts a number, must be inside a named capture, also when every line has the same text: keep fixed message words by capturing the whole message and nesting the value captures inside it. Only white space, punctuation and a key name directly before = and a capture of the same name may stay literal pattern text.',
     'Grok, JSONata execution, scripting and executable Ruby are not ParserRecipe stages.',
     'For JSON, prefer direct field paths. If reshaping is needed, prefer supported declarative split/merge rather than inventing executable JSONata.');
 

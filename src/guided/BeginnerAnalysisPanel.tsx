@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import type {ResidualRegion} from './residualProvenance';
 import {unsafeJsonNumberExplanation} from './unsafeJsonNumbers';
 import {independentKeyValuePairs} from '../grammar/parseStatus';
 import {Bot,CheckCircle2,Clipboard,TriangleAlert,Wrench} from 'lucide-react';
@@ -32,6 +33,7 @@ interface Props {
   onUseNeutralCsvColumns?:()=>void;
   protectedSourceValuesByEvent?:string[][];
   protectedResidualTextByEvent?:string[][];
+  protectedResidualRegionsByEvent?:ResidualRegion[][];
 }
 
 function utf8Slice(source:string,startByte:number,endByte:number):string{
@@ -292,7 +294,7 @@ function sourceSegments(raw:string,preview:MultiPassSourcePreview){
 export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draft,suite,onApplyCandidate,
   resolvedByReviewedCandidate=false,metadataLineCount=0,compilerBlockedReason,parserRuleReviewRequired=false,parserRuleReviewEventIndexes,
   csvReviewRequired=false,csvConsistentShapeAvailable=true,neutralCsvColumnCount,onUseNeutralCsvColumns,protectedSourceValuesByEvent,
-  protectedResidualTextByEvent}:Props){
+  protectedResidualTextByEvent,protectedResidualRegionsByEvent}:Props){
   const [selected,setSelected]=useState(0);
   const [promptOpen,setPromptOpen]=useState(false);
   const [promptText,setPromptText]=useState('');
@@ -506,7 +508,8 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
             onChatGPT={onOpenAssisted} source={source} draft={draft} suite={suite}
             onApplyCandidate={onApplyCandidate}
             protectedSourceValuesByEvent={protectedSourceValuesByEvent}
-            protectedResidualTextByEvent={protectedResidualTextByEvent}/>
+            protectedResidualTextByEvent={protectedResidualTextByEvent}
+            protectedResidualRegionsByEvent={protectedResidualRegionsByEvent}/>
         </>}
         {recipeImportEligible&&draft&&!suite&&<div className="beginner-inline-wait" role="status">
           <strong>Preparing result review…</strong>

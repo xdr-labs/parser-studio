@@ -721,7 +721,12 @@ export default function AutoParser({
    event.preview.residuals.filter(region=>region.endByte>region.startByte)
     .map(region=>decode(event.startByte+region.startByte,event.startByte+region.endByte))
     .filter(text=>text.trim().length>0));
-  return {review,frame,preview,raw,highlights,counts,protectedValues,protectedResiduals};
+  // The same regions as UTF-8 byte ranges of each event, for the character-level residual review (H-2).
+  const protectedResidualRegions=review?.events.map(event=>
+   event.preview.residuals.filter(region=>region.endByte>region.startByte&&
+    decode(event.startByte+region.startByte,event.startByte+region.endByte).trim().length>0)
+    .map(region=>({startByte:region.startByte,endByte:region.endByte})));
+  return {review,frame,preview,raw,highlights,counts,protectedValues,protectedResiduals,protectedResidualRegions};
  },[multiPass,sample,multiPassEvent,advanced]);
  const currentMultiPassReview=multiPassDerived.review;
  const currentMultiPassFrame=multiPassDerived.frame;
@@ -731,6 +736,7 @@ export default function AutoParser({
  const currentMultiPassCounts=multiPassDerived.counts;
  const protectedSourceValuesByEvent=multiPassDerived.protectedValues;
  const protectedResidualTextByEvent=multiPassDerived.protectedResiduals;
+ const protectedResidualRegionsByEvent=multiPassDerived.protectedResidualRegions;
  useEffect(()=>{
    if(advanced||parserSetOrigin||report.unsupported<3||!currentMultiPassReview||
       currentStructural||busy||pending||!suite)return;
@@ -859,7 +865,7 @@ export default function AutoParser({
          neutralCsvColumnCount={neutralCsvColumnCount??undefined}
          onUseNeutralCsvColumns={suggestNeutralCsvColumns}
          protectedSourceValuesByEvent={protectedSourceValuesByEvent}
-           protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
+           protectedResidualTextByEvent={protectedResidualTextByEvent} protectedResidualRegionsByEvent={protectedResidualRegionsByEvent}/>}
        {!advanced&&!parserSetOrigin&&parserSetCandidates.length>0&&currentStructural&&
          <div className="auto-parser-warning" aria-label="Similar log groups">
            <strong>Different log shapes were found
@@ -974,11 +980,11 @@ export default function AutoParser({
              initialByteRange={selectedMultiPass} selectionContext={{kind:selectedMultiPass.kind,path:selectedMultiPass.path}}
              source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}
              protectedSourceValuesByEvent={protectedSourceValuesByEvent}
-           protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
+           protectedResidualTextByEvent={protectedResidualTextByEvent} protectedResidualRegionsByEvent={protectedResidualRegionsByEvent}/>}
            {advanced&&currentMultiPass.status==='RAW_ONLY'&&<AutoParserAIReview raw={currentMultiPassRaw} status="unsupported" onChatGPT={onChatGPT}
              source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}
              protectedSourceValuesByEvent={protectedSourceValuesByEvent}
-           protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
+           protectedResidualTextByEvent={protectedResidualTextByEvent} protectedResidualRegionsByEvent={protectedResidualRegionsByEvent}/>}
 
          </div>}
        </div>}
@@ -1110,7 +1116,7 @@ export default function AutoParser({
          <p>{report.unsupported} of {report.sourceCount} events were not fully recognized. The original input is preserved; unsupported events are not silently discarded or marked parser-ready.</p>
          <AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite}
            protectedSourceValuesByEvent={protectedSourceValuesByEvent}
-           protectedResidualTextByEvent={protectedResidualTextByEvent}/>
+           protectedResidualTextByEvent={protectedResidualTextByEvent} protectedResidualRegionsByEvent={protectedResidualRegionsByEvent}/>
        </div>}
        {readable&&!beginnerResolved&&<div className="auto-parser-warning" aria-label="Readable events">
          <strong>{readable.count} of {readable.total} events were read completely</strong>
@@ -1231,7 +1237,7 @@ export default function AutoParser({
          <summary>Need a different extraction? Fix a field with ChatGPT</summary>
          {chosen&&suite&&!pending?<AutoParserAIReview raw={chosen.raw} status={chosen.status} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}
            protectedSourceValuesByEvent={protectedSourceValuesByEvent}
-           protectedResidualTextByEvent={protectedResidualTextByEvent}/>:
+           protectedResidualTextByEvent={protectedResidualTextByEvent} protectedResidualRegionsByEvent={protectedResidualRegionsByEvent}/>:
           <div className="stellar-ai-review" role="status" aria-label="Improve with AI preview status">
             <p>Preparing the optional ChatGPT correction tools for this event.</p>
           </div>}
