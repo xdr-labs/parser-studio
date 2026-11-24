@@ -19,7 +19,11 @@ import { getTag, matchAt, matchEnd } from './primitives';
 
 export interface StructuredOutcome { fields: Record<string, unknown>; errors: string[] }
 export interface RawPair { key: string; value: string; rawValue: string; quoted: boolean }
-export interface ParseVerdict { status: ParseStatus; lostPairs: RawPair[]; reasons: string[] }
+export interface ParseVerdict {
+  status: ParseStatus; lostPairs: RawPair[]; reasons: string[];
+  /** PARTIAL only because a body no grammar reads was kept whole as text (owner decision D-2): the event is handed over. */
+  textKept?: boolean;
+}
 
 // Sticky: tried exactly where a token starts, without cutting a window out of the text.
 const KEY_AT_TOKEN_START = /[A-Za-z_][A-Za-z0-9_.-]{0,95}=/uy;

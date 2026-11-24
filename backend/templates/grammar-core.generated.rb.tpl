@@ -724,7 +724,7 @@ end
 
 # src/grammar/readEvent.ts: gradeExtraction
 def psg_grade_extraction(raw, settings, extraction)
-  keyValueBody = verdict = reason = nil
+  keyValueBody = verdict = reason = claim = nil
   if (settings['format'] == 'generic_structural')
     return psg_classify_generic_structural(raw, extraction)
   end
@@ -734,7 +734,14 @@ def psg_grade_extraction(raw, settings, extraction)
     return verdict
   end
   reason = psg_unaccounted_text(raw, settings, extraction)
-  return (reason.equal?(:psg_null) ? verdict : {'status' => 'PARTIAL', 'lostPairs' => [], 'reasons' => [reason]})
+  if !reason.equal?(:psg_null)
+    return {'status' => 'PARTIAL', 'lostPairs' => [], 'reasons' => [reason]}
+  end
+  claim = psg_malformed_family_claim(settings, extraction)
+  if (claim == '')
+    return verdict
+  end
+  return {'status' => 'PARTIAL', 'lostPairs' => [], 'textKept' => true, 'reasons' => [(((('the message claims to be ' + claim) + ' but has no valid ') + claim) + ' header; it is kept as text')]}
 end
 
 # src/jsonDuplicateKeys.ts: hasDuplicateJsonObjectKeys
@@ -1139,6 +1146,33 @@ def psg_leef_event_unaccounted(text, fields)
   return ((fields.keys.length == (5 + seen)) ? :psg_null : 'an extracted field is not in the LEEF extension')
 end
 
+# src/grammar/readEvent.ts: malformedFamilyClaim
+def psg_malformed_family_claim(settings, extraction)
+  kind = message = start = text = claim = family = nil
+  if ((settings['format'] != 'syslog_rfc3164') && (settings['format'] != 'syslog_rfc5424'))
+    return ''
+  end
+  kind = psg_body_kind_of(extraction)
+  if (!kind.nil? && (kind != 'raw'))
+    return ''
+  end
+  message = extraction['fields']['message']
+  if !message.is_a?(String)
+    return ''
+  end
+  start = 0
+  while ((start < psg_len(message)) && (((psg_at(message, start) == "\u{feff}") || (psg_at(message, start) == ' ')) || (psg_at(message, start) == "\u{9}")))
+    start += 1
+  end
+  text = psg_slice(message, start)
+  claim = psg_match_at(/\G(?:(?<family>(?:CEF|LEEF))(?:(?:[ \t]))*:(?:(?:[ \t]))*(?:[0-9]))/, text, 0)
+  if claim.equal?(:psg_null)
+    return ''
+  end
+  family = ((psg_group(claim, 'family') == 'LEEF') ? 'leef' : 'cef')
+  return ((psg_extract_structured_family(text, family)['errors'].length > 0) ? psg_group(claim, 'family') : '')
+end
+
 # src/grammar/syslogHeader.ts: matchHeaderRule
 def psg_match_header_rule(rule, text)
   match = captures = nil
@@ -1373,13 +1407,13 @@ def psg_read_event(raw, settings)
   relay = psg_inspect_declared_forwarders(raw, settings['forwarder'])
   if (relay['status'] == 'ABSTAIN_UNSAFE')
     reason = ('The forwarded log cannot be safely unwrapped: ' + relay['reason'])
-    return {'fields' => {}, 'errors' => [reason], 'status' => 'UNKNOWN', 'reasons' => [reason], 'lostKeys' => [], 'forwarderHops' => [], 'family' => ''}
+    return {'fields' => {}, 'errors' => [reason], 'status' => 'UNKNOWN', 'reasons' => [reason], 'lostKeys' => [], 'forwarderHops' => [], 'family' => '', 'textKept' => false}
   end
   source = ((relay['status'] == 'UNWRAPPED') ? relay['payload'] : raw)
   extraction = psg_extract_event(source, settings)
   verdict = psg_grade_extraction(source, settings, extraction)
   family = psg_get_tag(extraction, 'mixedFamily')
-  return {'fields' => extraction['fields'], 'errors' => extraction['errors'], 'status' => verdict['status'], 'reasons' => verdict['reasons'], 'lostKeys' => psg_map(verdict['lostPairs'], lambda { |pair| pair['key'] }), 'forwarderHops' => relay['hops'], 'family' => (family.is_a?(String) ? family : '')}
+  return {'fields' => extraction['fields'], 'errors' => extraction['errors'], 'status' => verdict['status'], 'reasons' => verdict['reasons'], 'lostKeys' => psg_map(verdict['lostPairs'], lambda { |pair| pair['key'] }), 'forwarderHops' => relay['hops'], 'family' => (family.is_a?(String) ? family : ''), 'textKept' => (verdict['textKept'] == true)}
 end
 
 # src/grammar/parseStatus.ts: readRawPairs

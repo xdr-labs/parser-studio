@@ -5,8 +5,9 @@
  * scripts/grammar/ts2rb) and what the browser preview grades an event with. A result is a parsed event only
  * when its status is FULL; "the extractor returned no error" is never enough (src/grammar/parseStatus.ts).
  */
-import { bodyKindOf, type StructuredExtraction } from '../structuredFamilies';
-import { getTag } from './primitives';
+import { bodyKindOf, extractStructuredFamily, type StructuredExtraction } from '../structuredFamilies';
+import { getTag, matchAt } from './primitives';
+import { GRAMMAR_FRAGMENTS } from './syslogHeaderGrammar.generated';
 import { cefEventUnaccounted, csvRowUnaccounted, jsonTextUnaccounted, leefEventUnaccounted } from './lossGuard';
 import { inspectDeclaredForwarders, type ForwarderHop } from '../guided/declaredForwarder';
 import { extractEvent, type ExtractionSettings } from './extractEvent';
@@ -24,6 +25,8 @@ export interface EventReading {
   forwarderHops: ForwarderHop[];
   /** The family a mixed parser read the event with (src/grammar/extractEvent.ts extractMixed); '' otherwise. */
   family: string;
+  /** PARTIAL only because a Syslog message no grammar reads was kept whole as text (owner decision D-2). */
+  textKept: boolean;
 }
 
 /**
@@ -48,6 +51,34 @@ function unaccountedText(raw: string, settings: ExtractionSettings, extraction: 
   return kind === 'cef' ? cefEventUnaccounted(text, fields) : leefEventUnaccounted(text, fields);
 }
 
+// Contract fragment structured_family_claim: "CEF" or "LEEF", blanks, ":", blanks, a digit (the Python Multi-Pass
+// reader and the Generic Structural route use the same fragment).
+const FAMILY_CLAIM = new RegExp(GRAMMAR_FRAGMENTS.structured_family_claim.source, 'yu');
+
+/**
+ * Owner decision D-2 (2026-11-25): a Syslog message that claims to be CEF or LEEF (`CEF : 3 alerts today`,
+ * `CEF :0|A|...`) but that the CEF/LEEF grammar does not read is not CEF or LEEF. The envelope is read and the
+ * message is kept whole as text, but the body is not parsed, so the event is not FULL. The claim is read after a
+ * leading BOM, space or tab, like the Python reader. A plain message (`service restarted`, `CEF team meeting`)
+ * makes no claim and stays FULL; a valid CEF/LEEF message kept as text by an explicit raw body stays as it was.
+ */
+function malformedFamilyClaim(settings: ExtractionSettings, extraction: StructuredExtraction): string {
+  if (settings.format !== 'syslog_rfc3164' && settings.format !== 'syslog_rfc5424') return '';
+  // A raw body is the message itself (RFC 5424 tags it `raw`, the RFC 3164 reader leaves it untagged); a JSON,
+  // key=value, CEF, LEEF or regex body is tagged and its fields are under `body`.
+  const kind = bodyKindOf(extraction);
+  if (kind !== undefined && kind !== 'raw') return '';
+  const message = extraction.fields.message;
+  if (typeof message !== 'string') return '';
+  let start = 0;
+  while (start < message.length && (message[start] === '\ufeff' || message[start] === ' ' || message[start] === '\t')) start++;
+  const text = message.slice(start);
+  const claim = matchAt(FAMILY_CLAIM, text, 0);
+  if (claim === null) return '';
+  const family = claim.groups!.family === 'LEEF' ? 'leef' : 'cef';
+  return extractStructuredFamily(text, family).errors.length > 0 ? claim.groups!.family! : '';
+}
+
 /** The verdict on an extraction the caller already holds. */
 export function gradeExtraction(raw: string, settings: ExtractionSettings, extraction: StructuredExtraction): ParseVerdict {
   if (settings.format === 'generic_structural') return classifyGenericStructural(raw, extraction);
@@ -59,7 +90,11 @@ export function gradeExtraction(raw: string, settings: ExtractionSettings, extra
   if (verdict.status !== 'FULL') return verdict;
   // "No error and no lost pair" is not yet "nothing lost" for the dialects without key=value accounting.
   const reason = unaccountedText(raw, settings, extraction);
-  return reason === null ? verdict : { status: 'PARTIAL', lostPairs: [], reasons: [reason] };
+  if (reason !== null) return { status: 'PARTIAL', lostPairs: [], reasons: [reason] };
+  const claim = malformedFamilyClaim(settings, extraction);
+  if (claim === '') return verdict;
+  return { status: 'PARTIAL', lostPairs: [], textKept: true,
+    reasons: ['the message claims to be ' + claim + ' but has no valid ' + claim + ' header; it is kept as text'] };
 }
 
 export function readEvent(raw: string, settings: ExtractionSettings): EventReading {
@@ -68,7 +103,7 @@ export function readEvent(raw: string, settings: ExtractionSettings): EventReadi
   const relay = inspectDeclaredForwarders(raw, settings.forwarder);
   if (relay.status === 'ABSTAIN_UNSAFE') {
     const reason = 'The forwarded log cannot be safely unwrapped: ' + relay.reason;
-    return { fields: {}, errors: [reason], status: 'UNKNOWN', reasons: [reason], lostKeys: [], forwarderHops: [], family: '' };
+    return { fields: {}, errors: [reason], status: 'UNKNOWN', reasons: [reason], lostKeys: [], forwarderHops: [], family: '', textKept: false };
   }
   const source = relay.status === 'UNWRAPPED' ? relay.payload : raw;
   const extraction = extractEvent(source, settings);
@@ -78,5 +113,6 @@ export function readEvent(raw: string, settings: ExtractionSettings): EventReadi
     fields: extraction.fields, errors: extraction.errors, status: verdict.status, reasons: verdict.reasons,
     lostKeys: verdict.lostPairs.map(pair => pair.key), forwarderHops: relay.hops,
     family: typeof family === 'string' ? family : '',
+    textKept: verdict.textKept === true,
   };
 }

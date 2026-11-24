@@ -264,6 +264,11 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     if (effectiveFormat === 'generic_structural' && verdict.status === 'PARTIAL')
       diagnostics.push({ stage: 'extract', severity: 'warning', code: 'GENERIC_STRUCTURAL_NOT_FULL',
         message: 'This event is not completely parsed: ' + verdict.reasons.slice(0, 3).join('; ') + '.' });
+    // Owner decision D-2: the envelope is read and a message that only claims CEF/LEEF is kept whole as text. The
+    // event is handed over (the generated Ruby does the same), reported as not completely parsed.
+    else if (verdict.status === 'PARTIAL' && verdict.textKept === true)
+      diagnostics.push({ stage: 'extract', severity: 'warning', code: 'BODY_KEPT_AS_TEXT',
+        message: 'This event is not completely parsed: ' + verdict.reasons.join('; ') + '.' });
     else
     if (verdict.status === 'PARTIAL' && verdict.lostPairs.length > 0)
       error('extract', 'FIELD_LOSS_NOT_FULL',

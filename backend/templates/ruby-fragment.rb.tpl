@@ -46,8 +46,11 @@ def parserstudio_extract(text)
   reading = psg_read_event(psg_text(text), settings)
   # Parsing Success Contract at run time: only a FULL reading is a parsed event. A Generic Structural reading
   # that is PARTIAL is still handed over (owner policy D-2 keeps the legacy route working); the verdict travels
-  # with the event, and parserstudio_normalize never drops the original text of a PARTIAL one.
-  unless reading['status'] == 'FULL' || (reading['status'] == 'PARTIAL' && settings['format'] == 'generic_structural')
+  # with the event, and parserstudio_normalize never drops the original text of a PARTIAL one. A Syslog event whose
+  # message only claims CEF/LEEF is PARTIAL with the envelope read and the message kept whole as text (owner
+  # decision D-2, 2026-11-25), so it is handed over too.
+  unless reading['status'] == 'FULL' || (reading['status'] == 'PARTIAL' &&
+    (settings['format'] == 'generic_structural' || reading['textKept'] == true))
     reason = reading['reasons'][0] || 'The event is not completely parsed'
     # The record of a declined event names the class of its error (parser_err_msg), and operators filter on that
     # name. Text that is not JSON at all keeps the name it has always had there; every other decline is an
