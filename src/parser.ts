@@ -12,7 +12,7 @@ import type { EventBoundary } from './guided/contract';
 import {inspectDeclaredForwarders} from './guided/declaredForwarder';
 import {inspectEventProfile} from './guided/multiEventRouting';
 import {canonicalCaseTransform,canonicalIgnoreSourceValue} from '../backend/src/canonical-operator-contract';
-import {assignUnmapped,unmappedLeaves,unmappedOutputPath,unmappedText,type ReservedName} from './unmappedFields';
+import {assignUnmapped,reservedForUnmapped,unmappedLeaves,unmappedOutputPath,unmappedText,type ReservedName} from './unmappedFields';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -418,6 +418,8 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     const step=index+1;
     const safeOutput=(target:string)=>VALID_TARGET.test(target)&&
       !RUNTIME_OUTPUT_ROOTS.has(target.split('.')[0]!)&&
+      !reservedForUnmapped(target,draft.vendor.trim()||'vendor',
+        draft.preserveUnmapped===true&&draft.format!=='generic_structural')&&
       !normalizedPathExists(normalized,target)&&
       !target.split('.').some((part)=>UNSAFE_OUTPUT_SEGMENTS.has(part));
     const validDelimiter=(value:string|undefined)=>typeof value==='string'&&value.length>=1&&value.length<=8&&

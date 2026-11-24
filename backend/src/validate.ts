@@ -287,7 +287,9 @@ export function validateProject(input: unknown): ValidationResult {
   const hasVendorFields = Object.keys(p.normalization.vendorFields).length > 0 ||
     Boolean(p.normalization.eventProfiles?.variants.some(
       variant => Object.keys(variant.vendorFields).length > 0));
-  if (hasVendorFields && RESERVED.has(p.vendor))
+  // Owner decision Q3-1: kept fields are written there too, also when no vendor field is mapped (audit of 2b6602c G-3).
+  const keepsUnmapped = p.normalization.preserveUnmapped === true && p.extraction.format !== "generic_structural";
+  if ((hasVendorFields || keepsUnmapped) && RESERVED.has(p.vendor))
     issue(issues, "reserved_vendor_namespace", "/vendor",
       "Manufacturer name conflicts with a reserved output namespace. Choose a different output-safe manufacturer name.");
   for (const section of namespaces) {
@@ -359,6 +361,9 @@ export function validateProject(input: unknown): ValidationResult {
             issue(issues,"mapping_predicate_depth",path,"Mapping condition has more than eight source path segments.");
           if(RESERVED.has(mapping.normalized_name.split(".")[0]!))
             issue(issues,"reserved_field",path,"Event-profile destination is system-managed.");
+          // As for the shared vendor fields (audit of 2b6602c G-1).
+          if(section==="vendorFields"&&mapping.normalized_name.split(".")[0]==="parserstudio_unmapped")
+            issue(issues,"reserved_field",path,"parserstudio_unmapped is reserved for fields no mapping reads.");
           if(mapping.data_type==="date" && mapping.time_format!=="iso8601")
             issue(issues,"date_format",path,"Date requires ISO8601.");
           if(mapping.data_type!=="date" && (mapping.time_format || mapping.timezone))
@@ -392,6 +397,11 @@ export function validateProject(input: unknown): ValidationResult {
       }
       if (RESERVED.has(target.split(".")[0]!))
         issue(issues, "reserved_field", path, "System-managed output field is reserved.");
+      // The vendor namespace's parserstudio_unmapped object holds only fields no mapping reads, and while fields are
+      // kept the bare manufacturer name is that namespace (audit of 2b6602c G-2, G-4; src/unmappedFields.ts).
+      const own = p.vendor + ".parserstudio_unmapped";
+      if (target === own || target.startsWith(own + ".") || (keepsUnmapped && target === p.vendor))
+        issue(issues, "reserved_field", path, "parserstudio_unmapped and, while unmapped fields are kept, the bare manufacturer name are reserved.");
       const duplicate = destinations.find(candidate => conflicts(candidate.output, target));
       if (duplicate) issue(issues, "destination_collision", path, `Enrichment target collides with ${duplicate.path}.`);
       destinations.push({path, output: target});

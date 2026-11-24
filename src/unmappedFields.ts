@@ -17,6 +17,13 @@ import {canonicalIgnoreSourceValue} from '../backend/src/canonical-operator-cont
 export const UNMAPPED_COLLISION_ROOT='parserstudio_unmapped';
 export const UNMAPPED_IGNORED_VALUES:readonly string[]=['','N/A','-'];
 
+/** An enrichment output the kept fields own: the vendor namespace's parserstudio_unmapped object, and, while fields
+ * are kept, the bare manufacturer name, which is then the vendor namespace (independent audit of 2b6602c, G-2/G-4). */
+export function reservedForUnmapped(target:string,vendor:string,keepsUnmapped:boolean):boolean{
+  const own=vendor+'.'+UNMAPPED_COLLISION_ROOT;
+  return target===own||target.startsWith(own+'.')||(keepsUnmapped&&target===vendor);
+}
+
 /** kind: the mapping's sourcePathKind ('literal_root', 'nested', or undefined for the default lookup). */
 export interface CoveredSource{source:string;literal:boolean;nestedOnly?:boolean}
 export interface UnmappedLeaf{path:string[];value:unknown}
