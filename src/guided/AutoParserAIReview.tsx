@@ -101,10 +101,10 @@ export function protectedValueRegression(candidate:SuiteResult,protectedValues:s
  }
  return null;
 }
-// Words of a residual region: runs of letters, digits and underscores. The spaces and punctuation between them are the
-// source's separators, which a recipe reads as literal pattern text.
-const RESIDUAL_WORD=/[\p{L}\p{N}_]+/gu;
-const SYSTEM_OUTPUT_ROOTS=new Set(['stellar_log_index','msg_origin','parser_err_msg','parser_err_stage','parser_err_field']);
+// A previously unparsed region must be kept whole in one output value. This also refuses a lossless recipe that reads
+// a multi-token Multi-Pass region into several fields (final re-audit H-2, open). Counting the region's words in the
+// output instead let a recipe drop literal digits and signs (verification of 3f363d2, D-1), so the strict rule stays
+// until the review has span-level evidence of what each capture read.
 function protectedResidualRegression(candidate:SuiteResult,protectedResiduals:string[][]|undefined):
  {event:number;missing:number;required:number}|null{
  if(!protectedResiduals?.some(values=>values.length))return null;
@@ -116,21 +116,9 @@ function protectedResidualRegression(candidate:SuiteResult,protectedResiduals:st
   const event=candidate.events[index];
   if(hasLosslessSourceProjection(event))continue;
   const pool=scalarValues(event?.normalized);
-  // A region kept whole in one value is kept. A recipe that reads a multi-token region (Multi-Pass reports, e.g.,
-  // " TCP_MISS/200 5120 GET ") into several fields keeps it when every word of it is in the output, each
-  // occurrence counted once (final re-audit H-2). A word read as literal pattern text is not in the output.
-  const words=new Map<string,number>();
-  for(const value of scalarValues(Object.fromEntries(Object.entries(event?.normalized??{})
-    .filter(([key])=>!SYSTEM_OUTPUT_ROOTS.has(key)))))
-   for(const word of value.match(RESIDUAL_WORD)??[])words.set(word,(words.get(word)??0)+1);
   let missing=0;
   for(const residual of required){
-   if(pool.some(value=>value.includes(residual)))continue;
-   const needed=new Map<string,number>();
-   for(const word of residual.match(RESIDUAL_WORD)??[])needed.set(word,(needed.get(word)??0)+1);
-   if([...needed].every(([word,count])=>(words.get(word)??0)>=count))
-    for(const [word,count] of needed)words.set(word,words.get(word)!-count);
-   else missing++;
+   if(!pool.some(value=>value.includes(residual)))missing++;
   }
   if(missing)return {event:index+1,missing,required:required.length};
  }

@@ -243,8 +243,9 @@ it('rejects full recovery when previously unparsed text is read but not kept in 
 
 // Final independent re-audit of 62263b3 (2026-11-24), H-2: the real Multi-Pass evidence of these Squid lines
 // (runtime/multipass preview_batch at 62263b3, copied below) reports multi-token residual regions such as
-// " TCP_MISS/200 5120 GET ". A recipe that reads such a region into several fields keeps it; one that reads part of it
-// as literal pattern text does not.
+// " TCP_MISS/200 5120 GET ". The review keeps a region only when one output value holds it whole, so it still
+// refuses a lossless recipe that reads such a region into several fields (open, it.fails below). Counting words
+// instead let recipes drop literal digits and signs (verification D-1, IIS and Apache tests below).
 const SQUID='1763859723.123    245 192.0.2.51 TCP_MISS/200 5120 GET http://www.example.test/index.html - HIER_DIRECT/198.51.100.10 text/html\n'+
  '1763859724.456     12 192.0.2.52 TCP_DENIED/403 3900 CONNECT blocked.example.test:443 alice HIER_NONE/- text/html';
 const SQUID_HOLDOUT='1763859725.789     77 192.0.2.53 TCP_HIT/200 777 GET http://cdn.example.test/a.js - HIER_NONE/- application/javascript\n'+
@@ -299,7 +300,8 @@ async function squidReview(pattern:string,apply:(draft:import('../model').Parser
  fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
 }
 
-it('accepts a lossless recovery that reads multi-token Multi-Pass residuals into several fields (re-audit H-2)',async()=>{
+// Known false refusal (re-audit H-2, open): this lossless recipe should pass; it.fails turns green when it does.
+it.fails('accepts a lossless recovery that reads multi-token Multi-Pass residuals into several fields (re-audit H-2)',async()=>{
  const apply=vi.fn<(draft:import('../model').ParserDraft)=>void>();
  await squidReview(SQUID_PATTERN,apply);
  expect(await screen.findByText(/Fix passed: full parser recovery/)).toBeTruthy();
@@ -317,7 +319,7 @@ it('accepts a lossless recovery that reads multi-token Multi-Pass residuals into
 it('still rejects a recovery that reads part of a multi-token residual as literal text (re-audit H-2)',async()=>{
  const apply=vi.fn<(draft:import('../model').ParserDraft)=>void>();
  await squidReview(SQUID_PATTERN.replace(' (?<hierarchy>[A-Z_]+)/',' HIER_(?<hierarchy>[A-Z_]+)/'),apply);
- expect(await screen.findByText(/event 1 would leave 1 of 4 previously unparsed source regions outside the final parser output/)).toBeTruthy();
+ expect(await screen.findByText(/event 1 would leave 3 of 4 previously unparsed source regions outside the final parser output/)).toBeTruthy();
  expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
  expect(apply).not.toHaveBeenCalled();
  vi.unstubAllGlobals();
@@ -413,5 +415,74 @@ it('keeps previously unparsed text a ChatGPT recovery captures but leaves unmapp
   expect(values).toContain(line);
   expect(values).toContain(line.match(/\d+/)![0]);
  }
+ vi.unstubAllGlobals();
+});
+
+// Verification of 3f363d2 (D-1): recipes that drop literal digits (IIS sc-substatus and sc-win32-status read as the
+// pattern text "0 0") or a sign (Apache "-0500" read as "-" + digits) must be refused. Real Multi-Pass evidence
+// (runtime/multipass preview_batch at 3f363d2) of the lines below.
+async function residualReview(source:string,holdout:string,values:string[][],residuals:string[][],
+ holdoutValues:string[][],holdoutResiduals:string[][],pattern:string,apply:(draft:import('../model').ParserDraft)=>void){
+ vi.stubGlobal('crypto',webcrypto);
+ const recipe={
+  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+  projectId:'draft-demo_firewall',sourceFormat:'regex',bodyFormat:'regex',
+  sample:{sha256:createHash('sha256').update(source).digest('hex'),events:2},
+  stages:[
+   {op:'split_event',boundary:'single-line'},
+   {op:'parse_regex',pattern},
+   {op:'map_field',source:'client',target:'srcip',data_type:'ip',group:'top_fields'},
+   {op:'cast_type',target:'srcip',data_type:'ip'},
+   {op:'map_field',source:'status',target:'status',data_type:'string',group:'vendor_fields'},
+   {op:'classify',defaultIndex:'syslog',rules:[]},
+   {op:'fallback_unparsed',mode:'retain_unparsed'},
+  ],nativeVerified:false,targetVerified:false,
+ };
+ const draft=createDraft();
+ render(<AutoParserAIReview raw={source} status="partial" onChatGPT={vi.fn()}
+  source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
+  protectedSourceValuesByEvent={values} protectedResidualTextByEvent={residuals}
+  holdoutEvidenceRequester={async()=>evidenceWithResiduals(holdout,holdoutValues,holdoutResiduals)}/>);
+ fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+ fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
+ fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
+ fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
+}
+it('refuses a recovery that reads IIS status digits as literal pattern text (verification D-1)',async()=>{
+ const apply=vi.fn<(draft:import('../model').ParserDraft)=>void>();
+ await residualReview(
+  '2026-11-24 10:00:00 10.0.0.1 GET /index.html - 80 - 192.0.2.10 Mozilla/5.0 - 200 0 0 15\n'+
+  '2026-11-24 10:00:01 10.0.0.1 POST /login.aspx - 443 - 192.0.2.11 Mozilla/5.0 - 302 0 0 31',
+  '2026-11-24 10:00:02 10.0.0.1 GET /missing.html - 80 - 192.0.2.12 Mozilla/5.0 - 404 0 0 7\n'+
+  '2026-11-24 10:00:03 10.0.0.1 GET /error.aspx - 443 - 192.0.2.13 Mozilla/5.0 - 500 0 0 120',
+  [['10.0.0.1','192.0.2.10'],['10.0.0.1','192.0.2.11']],
+  [['2026-11-24 10:00:00 ',' GET /index.html - 80 - ',' Mozilla/5.0 - 200 0 0 15'],
+   ['2026-11-24 10:00:01 ',' POST /login.aspx - 443 - ',' Mozilla/5.0 - 302 0 0 31']],
+  [['10.0.0.1','192.0.2.12'],['10.0.0.1','192.0.2.13']],
+  [['2026-11-24 10:00:02 ',' GET /missing.html - 80 - ',' Mozilla/5.0 - 404 0 0 7'],
+   ['2026-11-24 10:00:03 ',' GET /error.aspx - 443 - ',' Mozilla/5.0 - 500 0 0 120']],
+  String.raw`^(?<date>\S+) (?<time>\S+) (?<server>[0-9.]+) (?<method>[A-Z]+) (?<uri>\S+) - (?<port>\d+) - (?<client>[0-9.]+) (?<ua>\S+) - (?<status>\d+) 0 0 (?<taken>\d+)$`,
+  apply);
+ expect(await screen.findByText(/would leave \d+ of \d+ previously unparsed source regions outside the final parser output/)).toBeTruthy();
+ expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
+ expect(apply).not.toHaveBeenCalled();
+ vi.unstubAllGlobals();
+});
+it('refuses a recovery that drops the sign of an Apache time zone (verification D-1)',async()=>{
+ const apply=vi.fn<(draft:import('../model').ParserDraft)=>void>();
+ await residualReview(
+  '192.0.2.7 - alice [24/Nov/2026:10:00:00 -0500] "GET /a HTTP/1.1" 200 2326\n'+
+  '192.0.2.8 - bob [24/Nov/2026:10:00:01 -0500] "GET /b HTTP/1.1" 404 512',
+  '192.0.2.9 - carol [24/Nov/2026:10:00:02 -0800] "GET /c HTTP/1.1" 200 100\n'+
+  '192.0.2.10 - dave [24/Nov/2026:10:00:03 -0800] "POST /d HTTP/1.1" 500 0',
+  [['192.0.2.7'],['192.0.2.8']],
+  [[' - alice [24/Nov/2026:10:00:00 -0500] "GET /a HTTP/1.1" 200 2326'],[' - bob [24/Nov/2026:10:00:01 -0500] "GET /b HTTP/1.1" 404 512']],
+  [['192.0.2.9'],['192.0.2.10']],
+  [[' - carol [24/Nov/2026:10:00:02 -0800] "GET /c HTTP/1.1" 200 100'],[' - dave [24/Nov/2026:10:00:03 -0800] "POST /d HTTP/1.1" 500 0']],
+  String.raw`^(?<client>[0-9.]+) - (?<user>\S+) \[(?<time>\S+) -(?<tz>\d{4})\] "(?<method>[A-Z]+) (?<path>\S+) (?<proto>\S+)" (?<status>\d+) (?<bytes>\d+)$`,
+  apply);
+ expect(await screen.findByText(/would leave \d+ of \d+ previously unparsed source regions outside the final parser output/)).toBeTruthy();
+ expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
+ expect(apply).not.toHaveBeenCalled();
  vi.unstubAllGlobals();
 });
