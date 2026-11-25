@@ -153,8 +153,9 @@ export function inferConsistentCsvColumnCount(
 }
 
 function extractSyslog(raw: string): Extraction {
-  // Narrow, explicitly approximate RFC 5424 header; no claim of full Fluentd equivalence.
-  const match = raw.match(/^<(\d{1,3})>(\d)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(?:-|\[[^\]]*\])\s+(.*)$/);
+  // Narrow, explicitly approximate RFC 5424 header; no claim of full Fluentd equivalence. Only VERSION 1 is read
+  // (owner decision of 2026-11-13): another version is never a successful RFC 5424 event in any reader.
+  const match = raw.match(/^<(\d{1,3})>(1)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(?:-|\[[^\]]*\])\s+(.*)$/);
   if (!match) return { fields: {}, errors: ['Unsupported Syslog header; preview accepts a subset of RFC 5424'] };
   const priority = Number(match[1]);
   if (priority > 191) return { fields: {}, errors: ['Syslog priority must be 0..191'] };

@@ -419,8 +419,15 @@ export default function AutoParser({
  const beginnerResolved=beginnerAuthoritativeComplete||reviewedCandidateComplete||neutralCsvComplete;
  // Owner decision 2026-11-22: events that cannot be read do not stop the parser for the events that can.
  // Offered when the sample as a whole cannot go on and at least one event was read completely.
- const readable=useMemo(()=>!advanced&&!parserSetOrigin&&report.boundary==='single-line'
-   ?readableEvents(sample,suite,report.events):null,[advanced,parserSetOrigin,report,sample,suite]);
+ // The split follows the verdicts this journey goes on with (beginnerResolved): with the automatic draft the server
+ // analysis and the first scan, with a reviewed draft the browser suite.
+ const readable=useMemo(()=>{
+   if(advanced||parserSetOrigin||report.boundary!=='single-line')return null;
+   if(draft.format!=='auto')return readableEvents(sample,suite,report.events);
+   if(multiPass?.raw!==sample)return null;
+   return readableEvents(sample,suite,report.events,
+     multiPass.events.map(event=>event.preview.status==='SOURCE_PARSED'));
+ },[advanced,parserSetOrigin,report,sample,suite,draft.format,multiPass]);
  const analyzeReadableEvents=useRef(false);
  useEffect(()=>{
    if(!analyzeReadableEvents.current||!parserSetOrigin?.excluded||sample!==parserSetOrigin.groupSource)return;
@@ -860,6 +867,7 @@ export default function AutoParser({
          compilerBlockedReason={currentReviewBlock?.reason}
          parserRuleReviewRequired={parserRuleReviewRequired}
          parserRuleReviewEventIndexes={parserRuleReviewEventIndexes}
+         readableEventsOffered={Boolean(readable&&!beginnerResolved)}
          csvReviewRequired={csvReviewActive&&!csvApproved}
          csvConsistentShapeAvailable={csvConsistentShapeAvailable}
          neutralCsvColumnCount={neutralCsvColumnCount??undefined}
@@ -1125,11 +1133,13 @@ export default function AutoParser({
            The other events are left out of this parser and are never shown as parsed.</p>
          <button type="button" aria-label="Continue with readable events" disabled={busy||pending}
            onClick={continueWithReadableEvents}>
-           Create the parser for the {readable.count} readable events
+           Create the parser for the {readable.count} readable event{readable.count===1?'':'s'}
          </button>
        </div>}
        {report.unsupported>0&&!beginnerResolved&&<p className="auto-parser-note beginner-essential-note">
-         Some events could not be understood safely. Parser Studio keeps those events unchanged and will not let you continue until they are reviewed.
+         {readable
+           ?'Some events could not be understood safely. Parser Studio keeps those events unchanged. Fix them, or create the parser for the readable events above.'
+           :'Some events could not be understood safely. Parser Studio keeps those events unchanged and will not let you continue until they are reviewed.'}
          <HelpTip label="Why are some events blocked?"
            text="Security logs can contain unusual headers, broken timestamps, several lines per event, or vendor-specific text. Parser Studio stops instead of guessing when that could lose data or create the wrong fields."/>
        </p>}
@@ -1170,7 +1180,9 @@ export default function AutoParser({
        {!advanced&&sample.trim()&&!currentMultiPassReview&&
          <p className="beginner-next-step" role="status">Analyze the logs first. Parser Studio will not create a parser from an unreviewed sample.</p>}
        {!advanced&&currentMultiPassReview&&!beginnerResolved&&
-         <p className="beginner-next-step needs-fix" role="status">Resolve the events marked above before continuing. Already-correct fields remain preserved.</p>}
+         <p className="beginner-next-step needs-fix" role="status">{readable
+           ?'Resolve the events marked above, or create the parser for the readable events. Already-correct fields remain preserved.'
+           :'Resolve the events marked above before continuing. Already-correct fields remain preserved.'}</p>}
        {!advanced&&currentMultiPassReview&&beginnerResolved&&pending&&
          <p className="beginner-next-step" role="status">Your logs were understood. Preparing the parser draft for field review…</p>}
        {currentReviewBlock&&<div className="auto-parser-warning" role="alert" aria-label="Parser draft not ready">

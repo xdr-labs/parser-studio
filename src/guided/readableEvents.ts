@@ -7,6 +7,10 @@
  * such an event as not parsed (parser_err_msg, backend/templates/canonical-operators.rb.tpl) and keeps its
  * complete original text in parser_raw_msg, the Stellar Cyber 7.0 dictionary field for the raw message of a
  * parsing error (owner decision of 2026-11-22), so the parser never drops the event.
+ *
+ * The split uses the verdicts the Auto Parser goes on with. With the automatic draft these are the server analysis
+ * (every event SOURCE_PARSED) and the first scan (every event RECOGNIZED); the browser preview alone is not enough.
+ * An event one of them refuses is not readable, so the sample of readable events can always go on (2026-11-25).
  */
 import type {SuiteResult} from '../model';
 import {splitEvents,MAX_EVENTS} from '../parser';
@@ -49,15 +53,18 @@ function excludedKind(scan:ScannedEvent|undefined,verdict:string):string{
  * route, for example ChatGPT Assisted), or the suite does not describe the sample line by line.
  */
 export function readableEvents(sample:string,suite:Pick<SuiteResult,'events'>|null|undefined,
-  scan:readonly ScannedEvent[]):ReadableEvents|null{
+  scan:readonly ScannedEvent[],sourceParsed?:readonly boolean[]):ReadableEvents|null{
   if(!suite)return null;
   const records=splitEvents(sample,'single-line',MAX_EVENTS+1);
   if(records.length<2||records.length>MAX_EVENTS||records.length!==suite.events.length)return null;
+  // sourceParsed: the verdict of the server analysis for each event, given with the automatic draft.
+  if(sourceParsed&&sourceParsed.length!==records.length)return null;
   const kept:string[]=[];
   const excluded=new Map<string,ExcludedEvents>();
   records.forEach((record,index)=>{
     const verdict=String(suite.events[index]!.parseStatus);
-    if(verdict==='FULL'){kept.push(record.raw);return;}
+    const accepted=!sourceParsed||(sourceParsed[index]===true&&scan[index]?.status==='RECOGNIZED');
+    if(verdict==='FULL'&&accepted){kept.push(record.raw);return;}
     const kind=excludedKind(scan[index],verdict);
     const group=excluded.get(kind)??{kind,count:0,events:[]};
     group.count+=1;group.events.push(index+1);
