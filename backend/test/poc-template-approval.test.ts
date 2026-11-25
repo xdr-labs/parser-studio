@@ -15,9 +15,9 @@ import {createHash} from "node:crypto";
 // is only checked for consistency with the template the current compiler produces.
 
 const tenant = "tenant-test-123";
-// Owner approval of 2026-11-17 for the audited template of PR #314 (generated Ruby of 3e1fd49).
+// Owner approval of 2026-11-25 for the audited template of PR #316 (generated Ruby of 2f85c6a).
 // Earlier owner-reviewed templates remain in KNOWN_TEMPLATES for existing evidence.
-const APPROVED_CURRENT_TEMPLATE_SHA256 = "4efddd8b5446799c0173788a8ef913fa393162cf18c1e1463e7e3e2e338bbfb8";
+const APPROVED_CURRENT_TEMPLATE_SHA256 = "2b65c2706ebe7855cfd5a8a2086404bf5fda1ca65483c2d65437f9911dfd1466";
 const digest = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
 
 function pocPair(): PairExport {

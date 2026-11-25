@@ -13,9 +13,9 @@ import {
 
 // Owner approval of the template set. null means that no template set has been approved: the gate below then
 // fails and prints the digest that needs a review. Do not copy a digest here without that review.
-// Owner approval of 2026-11-17 for the template set of PR #314 at 3e1fd49
-// (docs/verification/20261117-owner-template-approval.md).
-const APPROVED_TEMPLATE_SET_SHA256: string | null = '16824f8e1201e8c1bb2a2244baa4516db75546caa6d3fdddff8abb1575b4c7e4';
+// Owner approval of 2026-11-25 for the template set of PR #316 at 2f85c6a
+// (docs/verification/20261125-owner-template-approval.md).
+const APPROVED_TEMPLATE_SET_SHA256: string | null = 'bb653102732e01001b5a30d4ac05b14917bb43dbe84eb484c88c409b261e0e8a';
 
 const current = currentTemplateSet();
 const committed = (): TemplateSetManifest => JSON.parse(readFileSync(TEMPLATE_SET_MANIFEST_PATH, 'utf8')) as TemplateSetManifest;

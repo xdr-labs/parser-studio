@@ -38,6 +38,11 @@ const KNOWN_TEMPLATES=new Set([
   // (docs/verification/20261117-owner-template-approval.md). Approval remains synthetic POC-only; no target
   // import or general writes.
   "4efddd8b5446799c0173788a8ef913fa393162cf18c1e1463e7e3e2e338bbfb8",
+  // Owner-approved 2026-11-25: exact template of PR #316 at 2f85c6a (unmapped source fields kept as vendor
+  // fields, and the grammar changes of the verification records of 2026-11-21 to 2026-11-25), after its
+  // independent audits (docs/verification/20261125-owner-template-approval.md).
+  // Approval remains synthetic POC-only; no target import or general writes.
+  "2b65c2706ebe7855cfd5a8a2086404bf5fda1ca65483c2d65437f9911dfd1466",
   // Reviewed current compiler: fixed Unicode case-fold map embedded as a second
   // Base64 literal. Its exact bytes remain covered by the normalized template SHA.
   "439b1c9f31e827ad6ff92746ef9309f8ad5f2dbaa7952cdb77118f00e0a9f5f7",
