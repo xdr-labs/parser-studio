@@ -451,11 +451,10 @@ function keepsNativeReading(raw:string,draft:ParserDraft,fields:Record<string,un
   return typeof host!=='string'||(read.get('hostname')??[]).includes(host);
 }
 
-/** Reading modes of white-space separated text: the same event with one more key=value pair at its end is an
- * event of the same kind. */
-const SPACE_TEXT_MODES:readonly string[]=['space_kv','syslog_prefix_kv','bsd_tagged_message','bsd_bracket_pid_message',
-  'bsd_classic_pid_message'];
-const MESSAGE_MODES:readonly string[]=SPACE_TEXT_MODES.filter(mode=>mode.endsWith('_message'));
+/** Reading modes that keep the text of the event as one message. The modes that extract key=value pairs
+ * (space_kv, syslog_prefix_kv) are not judged here: both hold every pair under generic.kv.*, and the boundary
+ * between them (a text prefix with two to four pairs, five pairs or more) is the one of the shared grammar. */
+const MESSAGE_MODES:readonly string[]=['bsd_tagged_message','bsd_bracket_pid_message','bsd_classic_pid_message'];
 // A pair starts the text or follows white space, a semicolon or a comma (final audit F-2: `a=1;b=2 word`).
 const PAIR_AT_TOKEN_START=/(?:^|[\s;,])[A-Za-z_][\w.-]*=\S/gu;
 
@@ -470,13 +469,13 @@ function keepsPairsAsText(generic:Record<string,unknown>):boolean{
 }
 
 /**
- * True when the same event with one more key=value pair at its end is read the same way: the same reading mode,
- * and every value still under its name, unchanged or longer at its end (a message grows by the pair). A reading
- * that moves to another mode with one more field would change the paths of the fields at run time.
+ * True when an event kept as message text is read the same way with one more key=value pair at its end: the same
+ * reading mode, and every value still under its name, unchanged or longer at its end (a message grows by the
+ * pair). A message that becomes key=value fields with one more pair would change every path at run time.
  */
 function staysWithOneMorePair(raw:string,draft:ParserDraft,fields:Record<string,unknown>):boolean{
   const generic=fields.generic;
-  if(!isRecord(generic)||!SPACE_TEXT_MODES.includes(String(generic.mode)))return true;
+  if(!isRecord(generic)||!MESSAGE_MODES.includes(String(generic.mode)))return true;
   const probe=preview(raw+' parserstudio_probe=1',draft).events[0];
   const again=probe?.fields.generic;
   if(!probe||!isRecord(again)||again.mode!==generic.mode)return false;
@@ -504,8 +503,8 @@ function staysWithOneMorePair(raw:string,draft:ParserDraft,fields:Record<string,
  * because a line beside it needed the compiler.
  *
  * No event is adopted with a reading that keeps its key=value pairs as message text (keepsPairsAsText), or with
- * a reading that one more key=value pair would move to another reading mode (staysWithOneMorePair): such an
- * event stays with the first scan, which asks for a rule.
+ * a message reading that one more key=value pair would move to another reading mode (staysWithOneMorePair): such
+ * an event stays with the first scan, which asks for a rule.
  *
  * This holds whichever events of the sample opened the route.
  */

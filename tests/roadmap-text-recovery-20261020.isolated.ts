@@ -21,7 +21,8 @@ const recipe=(omitId=false)=>({
   sample:{sha256:createHash('sha256').update(source).digest('hex'),events:2},
   stages:[
     {op:'split_event',boundary:'single-line'},
-    {op:'parse_regex',pattern},
+    // omitId: the pattern still matches the id but reads it as fixed pattern text, with no capture and no mapping.
+    {op:'parse_regex',pattern:omitId?pattern.replace('(?<id>[^"]+)','[^"]+'):pattern},
     ...fields.filter(field=>!omitId||field!=='id').map(field=>({
       op:'map_field',source:field,target:field,data_type:'string',group:'vendor_fields',
     })),
@@ -63,7 +64,9 @@ test('a novice preserves partial source values and local Regex recovery, but tar
   const proposed=page.getByLabel('ChatGPT JSON result');
   const additional=page.getByLabel('Additional test logs',{exact:true});
 
-  // Even a matching Regex must retain every existing source value in output.
+  // Even a matching Regex must retain every existing source value in output. A value that is captured but not
+  // mapped is kept under its own name (unmapped fields are preserved), so the refused recipe is the one whose
+  // pattern reads the id without capturing it.
   await proposed.fill(JSON.stringify(recipe(true)));
   await additional.fill(holdout);
   await page.getByLabel('Confirm different test examples').check();

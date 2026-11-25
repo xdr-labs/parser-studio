@@ -66,6 +66,20 @@ describe('readings that are adopted as before',()=>{
     expect(modes([H(1)+'evt=flow_open fragmented client=10.44.7.21 server=198.51.100.77 verdict=permit zone=dmz',
       H(2)+'evt=flow_close reassembled client=10.44.7.22 server=198.51.100.78 verdict=deny zone=lan'])).toEqual(['space_kv','space_kv']);
   });
+  // A text prefix followed by two to four pairs behind a BSD Syslog header is the reading of the selected profile
+  // syslog_prefix_kv; with five pairs or more the same line is the older space separated reading. Both extract the
+  // pairs under generic.kv.*, so the boundary between them is not a reason to refuse the event (regression of
+  // 1e909af found by the CI step that runs tests/*.isolated.ts: the profile was never adopted any more).
+  it('a text prefix followed by key=value pairs behind a Syslog header, read as pairs',()=>{
+    const ftd='<134>Oct 19 08:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40 dst=198.51.100.5 action=block';
+    const adopted=adopt([ftd]);
+    expect(adopted?.suite.events.map(event=>(event.fields.generic as {mode:string}).mode)).toEqual(['syslog_prefix_kv']);
+    expect((adopted!.suite.events[0]!.fields.generic as {kv:Record<string,string>}).kv)
+      .toEqual({signature:'1000123',src:'192.0.2.40',dst:'198.51.100.5',action:'block'});
+    expect(modes(['<134>Oct 19 08:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40',
+      '<134>Oct 19 08:24:00 ftd01 %FTD-4-430002: Intrusion event detected signature=1000124 src=192.0.2.41']))
+      .toEqual(['syslog_prefix_kv','syslog_prefix_kv']);
+  });
   it('positional pieces before the pairs',()=>{
     expect(modes(['2026-11-25 10:00:00 fw1 allow srcip=10.0.0.1 dstip=10.0.0.2 srcport=1 dstport=2 proto=6',
       '2026-11-25 10:00:01 fw1 deny srcip=10.0.0.3 dstip=10.0.0.4 srcport=3 dstport=4 proto=17'])).toEqual(['space_kv','space_kv']);
