@@ -27,19 +27,17 @@ test('Map Fields shows the field matches of every event type of a multi-type par
   await review.click();
   await page.getByRole('button',{name:'Map Fields',exact:true}).last().click();
 
-  // The preview of the first event holds official fields, so the summary cannot say that nothing is matched.
+  // The preview of the Syslog key=value event holds official fields, so the summary cannot say that nothing is matched.
+  await page.getByLabel('Mapping event type').selectOption('rfc3164_kv');
   const preview=page.locator('.final-event-accounting + pre');
   await expect(preview).toContainText('"srcip": "10.44.7.21"');
   const summary=page.getByLabel('Field mapping summary');
   await expect(summary).not.toContainText('Matched to Stellar0');
   await expect(summary).toContainText('Left out of output0');
 
-  const types=page.getByLabel('Field matches by event type');
-  await expect(types).toContainText('3 event types');
-  await expect(types).toContainText('cef');
-  await expect(types).toContainText('json');
-  await expect(types.getByRole('listitem').filter({hasText:'dpt'})).toContainText('dstport');
-  await expect(types.getByRole('listitem').filter({hasText:'src_ip'})).toContainText('srcip');
+  // One event type at a time, with the screen of a single-type parser (see map-fields-event-type-manual).
+  await expect(page.getByLabel('Mapping by event type')).toContainText('3 event types');
+  await expect(page.getByLabel('Mapping event type').locator('option')).toHaveCount(3);
 
   // No field of the first event is reported without a rule: each one is matched or kept under its original name.
   await expect(page.getByText('NO MAPPING RULE')).toHaveCount(0);

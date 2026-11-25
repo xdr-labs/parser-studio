@@ -171,6 +171,53 @@ export function mergeFamilyCandidate(
   return {ok:true,draft:{...draft,eventProfiles,guided:{...draft.guided!,groups}}};
 }
 
+/**
+ * Manual mapping on one event type (Map Fields; owner decision of 2026-11-25: automatic, ChatGPT Assisted and manual
+ * mapping are available for every parser). `edited` is the single-type draft of projectFamilyDraft after the user
+ * added, changed or removed matches. A match that was shared stays shared, so its change applies to every type;
+ * the other matches become the matches of this type. Carried matches and the other types are kept as they are.
+ * How the source is read must be unchanged, and no destination may be written twice in one event of any type.
+ */
+export function applyFamilyMappingEdit(draft:ParserDraft,name:string,edited:ParserDraft):FamilyMergeResult{
+  const profiles=draft.eventProfiles;
+  if(!profiles)return {ok:false,reason:'NO_EVENT_PROFILES'};
+  const index=profiles.variants.findIndex(variant=>variant.name===name);
+  if(index<0)return {ok:false,reason:'UNKNOWN_FAMILY'};
+  for(const key of EXTRACTION_KEYS)
+    if(JSON.stringify(draft[key]??null)!==JSON.stringify(edited[key]??null))return {ok:false,reason:'SOURCE_FORMAT_CHANGED'};
+  const sharedIds=new Set(draft.mappings.map(rule=>rule.id));
+  const current=profiles.variants[index]!;
+  // A carried match stays unless the type now maps its source itself.
+  const ownSources=new Set(edited.mappings.filter(rule=>!sharedIds.has(rule.id)).map(rule=>rule.source));
+  const carried=current.mappings.filter(rule=>isCarriedFamilyMapping(rule)&&!ownSources.has(rule.source));
+  const elsewhere=new Set([...carried,...profiles.variants.flatMap((variant,at)=>at===index?[]:variant.mappings)].map(rule=>rule.id));
+  const groups:Record<string,FieldGroup>={...(draft.guided?.groups??{})};
+  for(const rule of [...draft.mappings,...current.mappings])if(!carried.includes(rule))delete groups[rule.id];
+  const shared:MappingRule[]=[],own:MappingRule[]=[];
+  for(const rule of edited.mappings){
+    const group=groupOf(edited,rule);
+    if(sharedIds.has(rule.id)){shared.push(rule);groups[rule.id]=group;continue;}
+    // An id another type (or a carried match) uses would make two matches share one group entry.
+    let id=rule.id;
+    while(elsewhere.has(id)||sharedIds.has(id)||own.some(other=>other.id===id))id='family-'+String(index)+'-'+id;
+    own.push(id===rule.id?rule:{...rule,id});groups[id]=group;
+  }
+  const variants=profiles.variants.map((variant,at)=>at===index?{...variant,mappings:[...own,...carried]}:variant);
+  const eventProfiles={...profiles,variants};
+  const next:ParserDraft={...draft,mappings:shared,eventProfiles,guided:{...(draft.guided??edited.guided)!,groups}};
+  // One destination at most once per event: the shared outputs and the outputs of each type.
+  for(const variant of variants){
+    const seen:string[]=[];
+    for(const rule of [...shared,...variant.mappings]){
+      const out=outputOf(next,rule);
+      if(seen.some(other=>overlaps(other,out)))return {ok:false,reason:'DESTINATION_COLLISION'};
+      seen.push(out);
+    }
+  }
+  if(validateEventProfiles(eventProfiles)!==null)return {ok:false,reason:'INVALID_FAMILY'};
+  return {ok:true,draft:next};
+}
+
 const countText=(count:number)=>count+(count===1?' record':' records');
 const stateText=(state:FamilyScope['state'])=>state==='READ'?'read completely':state==='PARTIAL'?'partly read':'not recognized';
 const ruleText=(draft:ParserDraft,rule:MappingRule)=>'  - '+rule.source+' -> '+rule.target+' ('+rule.type+', '+groupOf(draft,rule)+')';

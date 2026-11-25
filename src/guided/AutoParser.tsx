@@ -19,7 +19,7 @@ import {selectDraftFormat} from './draftFormatTransition';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {compileReviewedRecipeV02} from './recipeV2BackendClient';
 import {materializeStructuralGroupSource,type StructuralHint,type StructuralMiningReport} from './localPatternMining';
-import NormalizationMappingReview from './NormalizationMappingReview';
+import EventTypeMappingReview from './EventTypeMappingReview';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
 import {parseJavaStacktrace} from '../javaStacktrace';
@@ -1279,7 +1279,7 @@ export default function AutoParser({
          </button>
        </div>
      </section>}
-     {step===2&&<NormalizationMappingReview
+     {step===2&&<EventTypeMappingReview
        draft={draft} setDraft={setDraft} suite={suite}
        originalRawSample={sample}
        multipassSourceSample={multiPass?.raw}

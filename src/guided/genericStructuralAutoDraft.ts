@@ -451,6 +451,43 @@ function keepsNativeReading(raw:string,draft:ParserDraft,fields:Record<string,un
   return typeof host!=='string'||(read.get('hostname')??[]).includes(host);
 }
 
+/** Reading modes of white-space separated text: the same event with one more key=value pair at its end is an
+ * event of the same kind. */
+const SPACE_TEXT_MODES:readonly string[]=['space_kv','syslog_prefix_kv','bsd_tagged_message','bsd_bracket_pid_message',
+  'bsd_classic_pid_message'];
+const MESSAGE_MODES:readonly string[]=SPACE_TEXT_MODES.filter(mode=>mode.endsWith('_message'));
+const PAIR_AT_TOKEN_START=/(?:^|\s)[A-Za-z_][\w.-]*=\S/gu;
+
+/**
+ * True when the reading keeps key=value pairs of the event as message text: it holds the text, it has not parsed
+ * the pairs (owner decision of 2026-11-25: keeping the original message and structural parsing are two things).
+ * Prose with one such token ("session closed for uid=1001") is text.
+ */
+function keepsPairsAsText(generic:Record<string,unknown>):boolean{
+  return MESSAGE_MODES.includes(String(generic.mode))&&typeof generic.message==='string'&&
+    (generic.message.match(PAIR_AT_TOKEN_START)??[]).length>=2;
+}
+
+/**
+ * True when the same event with one more key=value pair at its end is read the same way: the same reading mode,
+ * and every value still under its name, unchanged or longer at its end (a message grows by the pair). A reading
+ * that moves to another mode with one more field would change the paths of the fields at run time.
+ */
+function staysWithOneMorePair(raw:string,draft:ParserDraft,fields:Record<string,unknown>):boolean{
+  const generic=fields.generic;
+  if(!isRecord(generic)||!SPACE_TEXT_MODES.includes(String(generic.mode)))return true;
+  const probe=preview(raw+' parserstudio_probe=1',draft).events[0];
+  const again=probe?.fields.generic;
+  if(!probe||!isRecord(again)||again.mode!==generic.mode)return false;
+  const before=new Map<string,string[]>(),after=new Map<string,string[]>();
+  leavesByName(fields,'',before);leavesByName(probe.fields,'',after);
+  for(const [name,list] of before){
+    const next=after.get(name)??[];
+    if(list.some((value,index)=>next[index]===undefined||!next[index]!.startsWith(value)))return false;
+  }
+  return true;
+}
+
 /**
  * Adoption of the bounded compiler's reading, decided on the reading of each event.
  *
@@ -464,6 +501,10 @@ function keepsNativeReading(raw:string,draft:ParserDraft,fields:Record<string,un
  * everything its native reading holds (independent audit 2026-11-21, F-02): one draft replaces the reading of
  * every event of the sample, and a completely read Syslog key=value line must not become one message field
  * because a line beside it needed the compiler.
+ *
+ * No event is adopted with a reading that keeps its key=value pairs as message text (keepsPairsAsText), or with
+ * a reading that one more key=value pair would move to another reading mode (staysWithOneMorePair): such an
+ * event stays with the first scan, which asks for a rule.
  *
  * This holds whichever events of the sample opened the route.
  */
@@ -483,6 +524,8 @@ export function buildSourceReviewedBoundedDraft(
       const mode=String(generic.mode);
       if(!NAMED_POSITIONAL_MODES.includes(mode)&&!(KEYED_CELL_MODES.includes(mode)&&keepsCells(event.raw,generic)))return false;
     }
+    if(isRecord(generic)&&keepsPairsAsText(generic))return false;
+    if(!staysWithOneMorePair(event.raw,candidate.draft,event.fields))return false;
     return nativelyRead[index]!==true||keepsNativeReading(event.raw,draft,event.fields);
   })?candidate:null;
 }

@@ -34,6 +34,10 @@ interface Props {
   multipassSourceSample?:string;
   originalRawSample?:string;
   onReviewResiduals?:()=>void;
+  /** One event type of a multi-type parser (EventTypeMappingReview): its matches stay as they were built for that type. */
+  skipGeneratedReconcile?:boolean;
+  /** The whole parser for ChatGPT mapping, which chooses its event type itself. */
+  jsonataScope?:{draft:ParserDraft;setDraft:Dispatch<SetStateAction<ParserDraft>>;suite?:SuiteResult};
 }
 
 const TYPES:MappingRule['type'][]=['string','integer','number','boolean','ip','port','timestamp'];
@@ -83,7 +87,7 @@ const FINDING_LABEL:Record<NormalizationFindingCode,string>={
 const VENDOR_LIST_COLLAPSE_AT=12;
 
 export default function NormalizationMappingReview({
-  draft,setDraft,suite,selected,setSelected,pending,onBack,onContinue,multipassResiduals,multipassRawEvents,multipassSourceSample,originalRawSample,onReviewResiduals,
+  draft,setDraft,suite,selected,setSelected,pending,onBack,onContinue,multipassResiduals,multipassRawEvents,multipassSourceSample,originalRawSample,onReviewResiduals,skipGeneratedReconcile=false,jsonataScope,
 }:Props){
   const [losslessAccounting,setLosslessAccounting]=useState<LosslessAccounting|null>(null);
   useEffect(()=>{
@@ -112,9 +116,9 @@ export default function NormalizationMappingReview({
   // current dictionary/semantic evidence as a fresh Auto Parser draft.
   // Hand-edited destinations and source conflicts are never rewritten.
   useEffect(()=>{
-    if(reconcileGeneratedMappings(draft,suite)===draft)return;
+    if(skipGeneratedReconcile||reconcileGeneratedMappings(draft,suite)===draft)return;
     setDraft(current=>reconcileGeneratedMappings(current,suite));
-  },[draft.mappings,draft.guided?.groups,suite,setDraft]);
+  },[draft.mappings,draft.guided?.groups,suite,setDraft,skipGeneratedReconcile]);
   const groups=draft.guided?.groups??{};
   // A parser for several event types maps each type with its own rules beside the shared ones (event profiles), and
   // a parser that keeps unmapped fields writes a field without a rule under its original name. The summary and the
@@ -489,7 +493,8 @@ export default function NormalizationMappingReview({
         </div>}
     </section>
 
-    {suite&&<JsonataMappingAssistant draft={draft} setDraft={setDraft} suite={suite} pending={pending}/>}
+    {(jsonataScope?.suite??suite)&&<JsonataMappingAssistant draft={jsonataScope?.draft??draft}
+      setDraft={jsonataScope?.setDraft??setDraft} suite={(jsonataScope?.suite??suite)!} pending={pending}/>}
 
     <div className="normalization-three-column" aria-label="Source to output mapping workspace">
     <section className="normalization-source-fields" aria-label="Source fields">
