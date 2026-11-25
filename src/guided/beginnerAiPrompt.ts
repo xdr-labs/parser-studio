@@ -3,7 +3,7 @@ import {MAX_EVENTS,splitEvents} from '../parser';
 import {defaultGuidedOptions} from './contract';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {sha256Utf8Hex} from '../sha256';
-import {recoveryResponseContract,sourceMarkers} from './chatGptPromptBuilder';
+import {REGEX_EXPORT_TARGET_RULE,recoveryResponseContract,sourceMarkers} from './chatGptPromptBuilder';
 import {buildEventCoverageEvidence} from './chatGptEventCoverage';
 import type {MultiPassSourcePreview} from './multipassPreviewClient';
 
@@ -78,6 +78,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
     'ParserRecipe safety contract:',
     'Use only Parser Studio declarative stages: JSON/KV/CEF/LEEF/CSV, supported Syslog wrappers, reviewed parse_generic_structural only when the local backend advertises GENERIC_STRUCTURAL_ULTRA_COMPILER_V15 and the event matches that bounded grammar, bounded split/merge, or bounded parse_regex for otherwise unresolved one-line text.',
     'For parse_regex: pattern must be at most 256 visible characters, contain one or more unique named captures (?<field>...), and must not use backreferences, lookbehind, unsafe nested repetition or excessive repetition bounds.',
+    REGEX_EXPORT_TARGET_RULE,
     'In parse_regex every letter, digit, _ and non-ASCII character of the source, every +, every - before a digit or at the start of a word, every . next to a digit, every : between digits or in ::, every % next to a digit and operators such as != or <= must be inside a named capture, also when every line has the same text: keep fixed message words by capturing the whole message and nesting the value captures inside it, and split a token such as ASA-6-302013 or 10:00:00 by capturing it whole with the part captures nested inside. Only white space, separators such as / | , ; ( ) [ ] and a key name directly before = and a capture spelled exactly like it may stay literal pattern text.',
     'Grok, JSONata execution, scripting and executable Ruby are not ParserRecipe stages.',
     'For JSON, prefer direct field paths. If reshaping is needed, prefer supported declarative split/merge rather than inventing executable JSONata.');

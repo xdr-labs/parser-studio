@@ -260,8 +260,9 @@ export function accountEventResiduals(raw:string,normalized:Record<string,unknow
   const found=pool.findIndex((value,index)=>!used[index]&&forms.includes(value));
   if(found>=0){used[found]=true;matched.add(capture);}else for(const form of forms)shortForms.add(form);
  }
- const counted=touching.filter(capture=>matched.has(capture)&&
-  !sourceAlternatives(capture.text).some(form=>shortForms.has(form)));
+ const countable=(capture:CaptureSpan)=>matched.has(capture)&&
+  !sourceAlternatives(capture.text).some(form=>shortForms.has(form));
+ const counted=touching.filter(countable);
  // Differential evidence (audit A-3, re-audit F-2): equal output values cannot tell which capture an output value
  // came from (a capture mapped twice could stand in for a dropped capture with the same text), so each capture must
  // show that a field holding its text depends on it (captureCarried).
@@ -270,8 +271,20 @@ export function accountEventResiduals(raw:string,normalized:Record<string,unknow
  // A run of value-bearing characters no kept capture covers is lost, except a key name the expression reads as literal
  // text right before `=` and a kept capture of exactly that name (`arch=(?<arch>\S+)`): the field name preserves it.
  // A key not spelled exactly like its capture name (`src-ip`, a Hangul key read as `___`) is never exempt (audit A-2).
- const keyCapture=(key:string,valueStart:number)=>evidence.captures.some(capture=>kept.has(capture)&&
-  capture.startByte===valueStart&&capture.name===key);
+ // The capture of a key may lie outside every residual region: the analysis already read the value, so the region ends
+ // at `key=` (`...|sip=` before a recognized address). It names the key all the same, on the evidence asked of a kept
+ // capture: its own output value (countable) that depends on it (captureCarried).
+ const namesKey=new Map<CaptureSpan,boolean>();
+ const carriedOutside=(capture:CaptureSpan)=>{
+  let known=namesKey.get(capture);
+  if(known===undefined){
+   known=!touching.includes(capture)&&countable(capture)&&captureCarried(raw,offsets,capture,base,draft);
+   namesKey.set(capture,known);
+  }
+  return known;
+ };
+ const keyCapture=(key:string,valueStart:number)=>evidence.captures.some(capture=>
+  capture.startByte===valueStart&&capture.name===key&&(kept.has(capture)||carriedOutside(capture)));
  let missing=0;let firstUnaccounted:{startByte:number;endByte:number}|undefined;let reason:ResidualRefusal|undefined;
  for(const span of spans){
   let regionLost=false;let run=null as {start:number;end:number;covered:boolean}|null;
