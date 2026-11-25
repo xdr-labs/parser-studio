@@ -505,4 +505,23 @@ absent({body:{spt:443,cpt:40022,protocol:'tcp'}},'body.spt');
 high({body:{spt:443,protocol:'tcp'}},'body.spt','srcport','integer');
 high({spt:443,protocol:'tcp',other:{cpt:40022}},'spt','srcport','integer');
 high({body:{spt:443,protocol:'tcp'},cpt:40022},'body.spt','srcport','integer');
+// `sport` is the source port beside dport, and the server port in records that name their endpoints client and
+// server (cip sip cport sport; W3C c-ip s-ip s-port). Beside a client-side endpoint name and without a destination
+// port in the same record it is offered for review and never approved; other source-port names are not affected.
+review({cip:'10.2.2.5',sip:'192.0.2.20',cport:51000,sport:443},'sport','srcport');
+review({'c-ip':'10.2.2.5',sport:443},'sport','srcport');
+review({client_ip:'10.2.2.5',sport:443},'sport','srcport');
+review({cliaddr:'10.2.2.5',sport:443},'sport','srcport');
+review({ClientHost:'edge-1',sport:443},'sport','srcport');
+review({body:{cport:51000,sport:443}},'body.sport','srcport');
+high({sip:'10.3.3.5',dip:'192.0.2.30',sport:52000,dport:443},'sport','srcport','integer');
+high({cip:'10.2.2.5',sport:52000,dport:443},'sport','srcport','integer');
+high({cip:'10.2.2.5',sport:52000,dst_port:443},'sport','srcport','integer');
+high({cip:'10.2.2.5',sport:52000,dstport:443},'sport','srcport','integer');
+high({meta:{cport:51000},body:{sport:52000}},'body.sport','srcport','integer');
+high({category:'web',count:3,sport:52000},'sport','srcport','integer');
+high({cip:'10.2.2.5',src_port:52000},'src_port','srcport','integer');
+high({cport:51000,source_port:52000},'source_port','srcport','integer');
+assert.deepEqual(suggest([{sport:52000},{cport:51000,sport:443}]).filter(c=>c.source==='sport').map(c=>c.confidence),['REVIEW'],
+  'one record with a client-side name beside sport');
 console.log('INDEPENDENT_ORACLE_PASS');

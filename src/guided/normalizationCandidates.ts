@@ -447,7 +447,7 @@ export function valueFitsNormalizationTarget(
 const CLIENT_SIDE_NAME=/^(?:c|cli|client)(?:port|ip|addr|address|host)$/u;
 const plainName=(name:string)=>name.toLowerCase().replace(/[-_]/gu,'');
 function serverPortReading(source:string,target:string,events:readonly Record<string,unknown>[]):boolean{
-  if(target!=='srcport'||plainName(source.split('.').at(-1)??source)!=='sport')return false;
+  if(target!=='srcport'||plainName(source.slice(source.lastIndexOf('.')+1))!=='sport')return false;
   return events.some(fields=>{
     if(!lookupFieldValue(fields,source).found)return false;
     const names=Object.keys(holderOf(fields,source).container).map(name=>name.toLowerCase());
