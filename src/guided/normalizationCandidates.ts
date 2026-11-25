@@ -440,6 +440,22 @@ export function valueFitsNormalizationTarget(
   return converted.error===undefined&&
     meetsStellar7ValueConstraints(target,value,converted.value);
 }
+// `sport` abbreviates "source port" beside `dport`, and "server port" in records that name their endpoints client
+// and server (`cip sip cport sport`; W3C does the same with c-ip, s-ip and s-port). Beside a client-side endpoint
+// name and without a destination port in the same record the name does not say which one it is, so the official
+// source port is offered for review and never approved (independent audit of e8d8d26, A-2).
+const CLIENT_SIDE_NAME=/^(?:c|cli|client)(?:port|ip|addr|address|host)$/u;
+const plainName=(name:string)=>name.toLowerCase().replace(/[-_]/gu,'');
+function serverPortReading(source:string,target:string,events:readonly Record<string,unknown>[]):boolean{
+  if(target!=='srcport'||plainName(source.split('.').at(-1)??source)!=='sport')return false;
+  return events.some(fields=>{
+    if(!lookupFieldValue(fields,source).found)return false;
+    const names=Object.keys(holderOf(fields,source).container).map(name=>name.toLowerCase());
+    return names.some(name=>CLIENT_SIDE_NAME.test(plainName(name)))&&
+      !names.some(name=>name==='dstport'||ALIASES[name]==='dstport');
+  });
+}
+
 function candidateForSource(source:string,events:Record<string,unknown>[],existing:MappingRule[],
  existingGroups:Record<string,FieldGroup>,formats:readonly (string|undefined)[]=[],
  readings:readonly (string|undefined)[]=[]):NormalizationCandidate|null{
@@ -518,7 +534,8 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   });
   // The official hostname needs more than a name: see hostNameUnconfirmed.
   const unconfirmedHost=target==='hostname'&&hostNameUnconfirmed(source,events,formats);
-  const high=!unconfirmedHost&&compatibleObserved===informative&&(values.length===events.length||namedAsTarget)&&
+  const serverPort=serverPortReading(source,target,events);
+  const high=!unconfirmedHost&&!serverPort&&compatibleObserved===informative&&(values.length===events.length||namedAsTarget)&&
     informative>0&&!nonTransportPort&&!lacksTransportEvidence;
   // Auto-generated provenance is explicit; field names and IDs cannot prove
   // that a user has not edited a persisted mapping.

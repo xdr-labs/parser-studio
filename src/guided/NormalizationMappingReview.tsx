@@ -11,6 +11,7 @@ import {isBlockingNormalizationFinding,reviewNormalizationMappings,
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import JsonataMappingAssistant from './JsonataMappingAssistant';
 import {reconcileGeneratedMappings} from './generatedMappingReconciliation';
+import {isCarriedFamilyMapping} from './multiEventRouting';
 import {createCanonicalMappingPlan} from './canonicalMappingPlan';
 import {sourceTextForByteRange} from './sourceByteSelection';
 import {accountLosslessSource,type LosslessAccounting} from './losslessAccounting';
@@ -115,8 +116,19 @@ export default function NormalizationMappingReview({
     setDraft(current=>reconcileGeneratedMappings(current,suite));
   },[draft.mappings,draft.guided?.groups,suite,setDraft]);
   const groups=draft.guided?.groups??{};
+  // A parser for several event types maps each type with its own rules beside the shared ones (event profiles), and
+  // a parser that keeps unmapped fields writes a field without a rule under its original name. The summary and the
+  // per-event statements describe that output, not the shared rules alone (independent audit of e8d8d26, A-1).
+  const typeRules=useMemo(()=>(draft.eventProfiles?.variants??[]).map(variant=>({name:variant.name,
+    rules:variant.mappings.filter(rule=>!isCarriedFamilyMapping(rule))})).filter(item=>item.rules.length>0),[draft.eventProfiles]);
+  const rulesOfEvent=(event:SuiteResult['events'][number]|undefined):MappingRule[]=>[...draft.mappings,
+    ...(typeRules.find(item=>item.name===event?.eventFamily)?.rules??[])];
+  const outputRules=[...draft.mappings,...typeRules.flatMap(item=>item.rules)];
+  const keepsUnmapped=draft.preserveUnmapped===true;
   const canonicalPlan=useMemo(()=>createCanonicalMappingPlan(suite,draft),[suite,draft]);
-  const candidates=canonicalPlan.officialCandidates;
+  // A source one event type already matches is not offered again as a match for every type.
+  const typeSources=new Set(typeRules.flatMap(item=>item.rules.map(rule=>rule.source)));
+  const candidates=canonicalPlan.officialCandidates.filter(candidate=>!typeSources.has(candidate.source));
   const candidateScan=useMemo(()=>normalizationCandidateScanStatus(suite),[suite]);
   const mappingReview=useMemo(()=>reviewNormalizationMappings(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
   const findings=mappingReview.findings;
@@ -142,12 +154,13 @@ export default function NormalizationMappingReview({
   },[selectedSource,sourceFields]);
   const unaddressableCount=useMemo(()=>
     (suite?.events??[]).reduce((count,event)=>count+countUnaddressableSourceValues(event.fields),0),[suite]);
-  const mappedSources=new Set(draft.mappings.map(mapping=>mapping.source));
+  const mappedSources=new Set(outputRules.map(mapping=>mapping.source));
+  const withoutRule=sourceFields.filter(field=>!mappedSources.has(field)).length;
   const rawRetained=(suite?.events??[]).filter(event=>typeof event.raw==='string').length;
   const statusCounts=(suite?.events??[]).reduce((counts,event)=>{
     const status=event.parseStatus??'UNKNOWN';counts[status]=(counts[status]??0)+1;return counts;
   },{} as Record<string,number>);
-  const outputPairs=(suite?.events??[]).flatMap((event,eventIndex)=>draft.mappings.flatMap(mapping=>{
+  const outputPairs=(suite?.events??[]).flatMap((event,eventIndex)=>rulesOfEvent(event).flatMap(mapping=>{
     if(!mappingWhenApplies(event.fields,mapping.when))return [];
     const source=lookupFieldValue(event.fields,mapping.source,mapping.sourcePathKind);
     if(!source.found)return [];
@@ -160,8 +173,8 @@ export default function NormalizationMappingReview({
     return [{sourceFound:true,outputFound:output.found&&!blocked}];
   }));
   const outputPresent=outputPairs.filter(pair=>pair.outputFound).length;
-  const officialCount=draft.mappings.filter(mapping=>catalogState(mapping,groups[mapping.id]??'vendor_fields').kind==='verified').length;
-  const vendorCount=draft.mappings.filter(mapping=>(groups[mapping.id]??'vendor_fields')==='vendor_fields').length;
+  const officialCount=outputRules.filter(mapping=>catalogState(mapping,groups[mapping.id]??'vendor_fields').kind==='verified').length;
+  const vendorCount=outputRules.filter(mapping=>(groups[mapping.id]??'vendor_fields')==='vendor_fields').length+(keepsUnmapped?withoutRule:0);
   const blocking=findings.filter(finding=>isBlockingNormalizationFinding(finding.code));
   const unplanned=canonicalPlan.entries.filter(entry=>entry.disposition==='REVIEW_REQUIRED');
   // Notes that do not block (a source path absent from every applicable event).
@@ -300,11 +313,11 @@ export default function NormalizationMappingReview({
     const needle=sourceSearch.trim().toLowerCase();
     const sample=displayValue(value);
     if(needle&&!path.toLowerCase().includes(needle)&&!sample.toLowerCase().includes(needle))return null;
-    const applicable=draft.mappings.filter(mapping=>mapping.source===path&&
+    const applicable=rulesOfEvent(chosen).filter(mapping=>mapping.source===path&&
       mappingWhenApplies(chosen?.fields??{},mapping.when));
     const disposition=value===null?'NOT MAPPABLE · null source value':!safe
       ?'NOT MAPPABLE · retained in the original source'
-      :applicable.length===0?(mappedSources.has(path)?'NOT EMITTED · source value present; mapping condition does not apply':'NO MAPPING RULE · source value present')
+      :applicable.length===0?(mappedSources.has(path)?'NOT EMITTED · source value present; mapping condition does not apply':keepsUnmapped?'KEPT · original name and value in the vendor fields':'NO MAPPING RULE · source value present')
       :applicable.some(mapping=>{
         const group=groups[mapping.id]??'vendor_fields';
         const root=group==='vendor_fields'?chosen?.normalized[draft.vendor]:chosen?.normalized;
@@ -369,11 +382,22 @@ export default function NormalizationMappingReview({
           before trusting the mapping recommendations.</span>}
     </div>}
 
+    {typeRules.length>0&&<div className="normalization-runtime-note" role="note" aria-label="Field matches by event type">
+      <strong>This parser has {typeRules.length} event types with their own field matches</strong>
+      <span>Each event type is matched separately; the summary below counts these matches too. To change the matches
+        of one event type, use Improve with ChatGPT and choose that event type. The editable list further down holds
+        only the matches shared by every event type.</span>
+      {typeRules.map(item=><div key={item.name}><b>{item.name}</b>
+        <ul>{item.rules.map(rule=><li key={rule.id}>{sourceDisplay(rule.source)} {'\u2192'} {rule.target}
+          {' '}({(groups[rule.id]??'vendor_fields')==='vendor_fields'?'vendor field':'Stellar field'})</li>)}</ul>
+      </div>)}
+    </div>}
+
     <div className="normalization-kpis" aria-label="Field mapping summary">
       <div><span>Fields found</span><strong>{sourceFields.length}</strong></div>
       <div><span>Matched to Stellar</span><strong>{officialCount}</strong></div>
       <div><span>Vendor fields retained</span><strong>{vendorCount}</strong></div>
-      <div><span>Left out of output</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length+unaddressableCount}</strong></div>
+      <div><span>Left out of output</span><strong>{(keepsUnmapped?0:withoutRule)+unaddressableCount}</strong></div>
       {unaddressableCount>0&&<div><span>Unmappable source values</span><strong>{unaddressableCount}</strong></div>}
       <div className={mappingReview.totalBlocking?'attention':''}><span>Must fix before continuing</span><strong>{mappingReview.totalBlocking}</strong></div>
     </div>
@@ -608,7 +632,7 @@ export default function NormalizationMappingReview({
           <span>Structural status: {chosen.parseStatus??'UNKNOWN'}</span>
           <span>Output values present: {outputPresent} / {outputPairs.length}</span>
           {unaddressableCount>0&&<strong>{unaddressableCount} unaddressable source values remain visible in the source tree and original log.</strong>}
-          {sourceFields.filter(path=>!mappedSources.has(path)).length>0&&<strong>{sourceFields.filter(path=>!mappedSources.has(path)).length} safe source paths have no mapping rule.</strong>}
+          {sourceFields.filter(path=>!mappedSources.has(path)).length>0&&<strong>{sourceFields.filter(path=>!mappedSources.has(path)).length} safe source paths have no mapping rule.{keepsUnmapped?' They are kept under their original names in the vendor fields.':''}</strong>}
         </div>
         <pre>{JSON.stringify(chosen.normalized,null,2)}</pre>
       </>}

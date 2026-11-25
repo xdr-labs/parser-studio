@@ -39,7 +39,9 @@ function excludedKind(scan:ScannedEvent|undefined,verdict:string):string{
   if(verdict==='PARTIAL')return 'partly read: some values were not extracted';
   if(!scan)return 'unrecognized format';
   const envelope=ENVELOPE_NAMES[scan.envelope];
-  if(scan.status==='HEADER_MALFORMED')return (envelope??'Syslog')+' header that could not be read';
+  // The envelope of a header that could not be read is not established (an RFC 5424 line with VERSION 2 is scanned
+  // as a damaged RFC 3164 header), so no envelope is named.
+  if(scan.status==='HEADER_MALFORMED')return 'Syslog header that could not be read';
   if(scan.envelope==='none'&&scan.body==='csv')return 'delimited record without column names';
   const body=BODY_NAMES[scan.body];
   if(scan.status==='BODY_MALFORMED'&&body)return (envelope?envelope+' with a ':'')+body+' body that could not be read';
