@@ -43,6 +43,11 @@ describe('a reading that keeps key=value pairs as message text is not adopted',(
   it('two pairs and a bare token: the reading is stable, but the pairs are only text',()=>{
     expect(adopt([H(1)+'evt=flow_open fragmented client=10.44.7.21',H(2)+'evt=flow_close reassembled client=10.44.7.22'])).toBeNull();
   });
+  it.each(['op=sess_new;initiator=10.72.5.31;responder=192.0.2.141 trusted',
+    'op="sess_new",initiator="10.72.5.31",responder="192.0.2.141" trusted'])(
+    'pairs separated by ; or , with a bare token (final audit F-2): %s',body=>{
+    expect(adopt([H(1)+body,H(2)+body.replace('5.31','5.32')])).toBeNull();
+  });
   it('one such event beside a free-text event is enough',()=>{
     expect(adopt([H(1)+'service restarted',H(2)+'evt=flow_close reassembled client=10.44.7.22 server=198.51.100.78 verdict=deny'])).toBeNull();
   });

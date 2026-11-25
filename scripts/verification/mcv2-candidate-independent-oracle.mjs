@@ -258,7 +258,8 @@ high({spt:443,proto:6,transport:8080},'spt','srcport','integer');
 high({spt:443,proto:6,network:{bytes:10}},'spt','srcport','integer');
 // A literal key written with a protocol-named prefix: only the sibling's own name is read ('proto.' is how the
 // source is written), and a list of transport names is transport evidence.
-high({'proto.sport':443,'proto.note':'x'},'proto.sport','srcport','integer');
+// (sport is approved only beside a destination port, see the end of this file: the case has one.)
+high({'proto.sport':443,'proto.dport':8443,'proto.note':'x'},'proto.sport','srcport','integer');
 high({spt:443,protocol:['tcp','udp']},'spt','srcport','integer');
 review({spt:443,protocol:['tcp','icmp']},'spt','srcport');
 // A non-transport protocol at the root of the record keeps a port of a nested object in review.
@@ -505,23 +506,24 @@ absent({body:{spt:443,cpt:40022,protocol:'tcp'}},'body.spt');
 high({body:{spt:443,protocol:'tcp'}},'body.spt','srcport','integer');
 high({spt:443,protocol:'tcp',other:{cpt:40022}},'spt','srcport','integer');
 high({body:{spt:443,protocol:'tcp'},cpt:40022},'body.spt','srcport','integer');
-// `sport` is the source port beside dport, and the server port in records that name their endpoints client and
-// server (cip sip cport sport; W3C c-ip s-ip s-port). Beside a client-side endpoint name and without a destination
-// port in the same record it is offered for review and never approved; other source-port names are not affected.
+// `sport` is the source port beside a destination port, and the server port in records that name their endpoints
+// client and server (cip sip cport sport; W3C c-ip s-ip s-port). It is approved only when the same record has a
+// destination port; otherwise it is offered for review. Other source-port names are not affected.
 review({cip:'10.2.2.5',sip:'192.0.2.20',cport:51000,sport:443},'sport','srcport');
 review({'c-ip':'10.2.2.5',sport:443},'sport','srcport');
-review({client_ip:'10.2.2.5',sport:443},'sport','srcport');
-review({cliaddr:'10.2.2.5',sport:443},'sport','srcport');
-review({ClientHost:'edge-1',sport:443},'sport','srcport');
+review({client_ip_address:'10.2.2.1',server_ip_address:'192.0.2.20',sport:443},'sport','srcport');
+review({client_hostname:'pc-1',server_hostname:'web-1',sport:443},'sport','srcport');
+review({remote_ip:'10.2.2.1',local_ip:'192.0.2.20',sport:443},'sport','srcport');
+review({category:'web',count:3,sport:52000},'sport','srcport');
 review({body:{cport:51000,sport:443}},'body.sport','srcport');
+review({meta:{dport:443},body:{sport:52000}},'body.sport','srcport');
 high({sip:'10.3.3.5',dip:'192.0.2.30',sport:52000,dport:443},'sport','srcport','integer');
 high({cip:'10.2.2.5',sport:52000,dport:443},'sport','srcport','integer');
 high({cip:'10.2.2.5',sport:52000,dst_port:443},'sport','srcport','integer');
-high({cip:'10.2.2.5',sport:52000,dstport:443},'sport','srcport','integer');
-high({meta:{cport:51000},body:{sport:52000}},'body.sport','srcport','integer');
-high({category:'web',count:3,sport:52000},'sport','srcport','integer');
+high({sport:52000,dstport:443},'sport','srcport','integer');
+high({body:{sport:52000,dport:443}},'body.sport','srcport','integer');
 high({cip:'10.2.2.5',src_port:52000},'src_port','srcport','integer');
 high({cport:51000,source_port:52000},'source_port','srcport','integer');
-assert.deepEqual(suggest([{sport:52000},{cport:51000,sport:443}]).filter(c=>c.source==='sport').map(c=>c.confidence),['REVIEW'],
-  'one record with a client-side name beside sport');
+assert.deepEqual(suggest([{sport:52000,dport:443},{sport:443}]).filter(c=>c.source==='sport').map(c=>c.confidence),['REVIEW'],
+  'one record without a destination port beside sport');
 console.log('INDEPENDENT_ORACLE_PASS');

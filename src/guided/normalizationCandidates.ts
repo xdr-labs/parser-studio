@@ -441,18 +441,18 @@ export function valueFitsNormalizationTarget(
     meetsStellar7ValueConstraints(target,value,converted.value);
 }
 // `sport` abbreviates "source port" beside `dport`, and "server port" in records that name their endpoints client
-// and server (`cip sip cport sport`; W3C does the same with c-ip, s-ip and s-port). Beside a client-side endpoint
-// name and without a destination port in the same record the name does not say which one it is, so the official
-// source port is offered for review and never approved (independent audit of e8d8d26, A-2).
-const CLIENT_SIDE_NAME=/^(?:c|cli|client)(?:port|ip|addr|address|host)$/u;
+// and server (`cip sip cport sport`; W3C does the same with c-ip, s-ip and s-port). The name alone does not say
+// which one it is, and no list of client-side names is complete (client_ip_address, client_hostname, remote/local:
+// final audit F-1). So the record itself has to show the source/destination pair: `sport` is approved as the
+// official source port only when the same record has a destination port; otherwise it is offered for review.
 const plainName=(name:string)=>name.toLowerCase().replace(/[-_]/gu,'');
 function serverPortReading(source:string,target:string,events:readonly Record<string,unknown>[]):boolean{
   if(target!=='srcport'||plainName(source.slice(source.lastIndexOf('.')+1))!=='sport')return false;
   return events.some(fields=>{
     if(!lookupFieldValue(fields,source).found)return false;
-    const names=Object.keys(holderOf(fields,source).container).map(name=>name.toLowerCase());
-    return names.some(name=>CLIENT_SIDE_NAME.test(plainName(name)))&&
-      !names.some(name=>name==='dstport'||ALIASES[name]==='dstport');
+    // The names beside it, each by its last segment: a literal dotted key ("flow.dport" beside "flow.sport") counts.
+    const names=Object.keys(holderOf(fields,source).container).map(name=>name.toLowerCase().split('.').pop()!);
+    return !names.some(name=>name==='dstport'||ALIASES[name]==='dstport');
   });
 }
 

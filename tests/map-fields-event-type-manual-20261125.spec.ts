@@ -75,7 +75,12 @@ test('the field matches of one event type are added, changed and removed by hand
   if(sensor>=0){
     await stellar(sensor).fill('srcip');
     await expect(page.getByLabel('Event type mapping refusal')).toContainText('same Stellar Cyber field');
-    await expect(stellar(await row(page,'sensor'))).not.toHaveValue('srcip');
+    // The text stays as typed beside the reason; the parser is not changed until the name is free.
+    await expect(stellar(await row(page,'sensor'))).toHaveValue('srcip');
+    await stellar(await row(page,'sensor')).fill('sensor');
+    // Choosing an official field also took its value type (IP address); the name of a vendor field does not set one.
+    await editor.getByLabel('Value type '+await row(page,'sensor'),{exact:true}).selectOption('string');
+    await expect(page.getByLabel('Event type mapping refusal')).toHaveCount(0);
   }
 
   // Add: bytes gets a match by hand (an automatic vendor match of it is removed first), then a name of its own.
@@ -86,8 +91,13 @@ test('the field matches of one event type are added, changed and removed by hand
   await page.getByLabel('Source fields').getByRole('button',{name:'bytes',exact:true}).click();
   await page.getByRole('button',{name:'Keep as vendor field'}).click();
   await expect.poll(()=>row(page,'bytes')).toBeGreaterThanOrEqual(0);
-  await stellar(await row(page,'bytes')).fill('traffic_bytes');
-  await expect(stellar(await row(page,'bytes'))).toHaveValue('traffic_bytes');
+  // Typed key by key: on the way the text is empty and then equals a name that is taken (the vendor name "sensor"); nothing typed
+  // is lost and the name arrives (final audit F-3).
+  const typed=stellar(await row(page,'bytes'));
+  await typed.fill('');
+  await typed.pressSequentially('sensor_bytes');
+  await expect(stellar(await row(page,'bytes'))).toHaveValue('sensor_bytes');
+  await expect(page.getByLabel('Event type mapping refusal')).toHaveCount(0);
 
   // The other event types keep their matches, and the edits of the JSON type stay.
   await choose(page,'cef');
@@ -97,7 +107,7 @@ test('the field matches of one event type are added, changed and removed by hand
   await choose(page,'json');
   await expect(stellar(await row(page,'dst_ip'))).toHaveValue('srcip');
   expect(await row(page,'src_ip')).toBe(-1);
-  await expect(stellar(await row(page,'bytes'))).toHaveValue('traffic_bytes');
+  await expect(stellar(await row(page,'bytes'))).toHaveValue('sensor_bytes');
 
   await page.getByRole('button',{name:'Create Parser',exact:true}).last().click();
   await page.getByText(/Run Final Test/).first().click();

@@ -4,13 +4,14 @@ import type {ParserDraft} from '../model';
 import {preview} from '../parser';
 import NormalizationMappingReview from './NormalizationMappingReview';
 import {UNRECOGNIZED_SCOPE,applyFamilyMappingEdit,familyScopes,familySource,projectFamilyDraft} from './familyScopedAssist';
+import {isCarriedFamilyMapping} from './multiEventRouting';
 
 type Props=ComponentProps<typeof NormalizationMappingReview>;
 
 const REFUSAL:Record<string,string>={
-  DESTINATION_COLLISION:'Two field matches would write the same Stellar Cyber field in one event. Nothing was changed.',
-  SOURCE_FORMAT_CHANGED:'A field match cannot change how the log is read. Nothing was changed.',
-  INVALID_FAMILY:'The event types of this parser would no longer be valid. Nothing was changed.',
+  DESTINATION_COLLISION:'Two field matches would write the same Stellar Cyber field or vendor field name in one event; a name another event type of this parser carries counts too. This change is not applied until the name is free.',
+  SOURCE_FORMAT_CHANGED:'A field match cannot change how the log is read. This change is not applied.',
+  INVALID_FAMILY:'A field match needs a destination name. This change is not applied until it has one.',
 };
 
 /**
@@ -26,28 +27,38 @@ function EventTypeScopedMappingReview(props:Props){
   const [chosen,setChosen]=useState('');
   const [picked,setPicked]=useState(0);
   const [notice,setNotice]=useState('');
+  // A change that cannot be applied yet (a name typed half-way that is taken, an empty name) stays on the screen as
+  // the user typed it, beside the reason; it is applied with the next change that can be (final audit F-3: refusing
+  // each such keystroke dropped characters of the name). It belongs to the draft it was made on.
+  const [held,setHeld]=useState<{base:ParserDraft;type:string;edited:ParserDraft}|null>(null);
   const active=scopes.find(scope=>scope.name===chosen)??scopes[0];
   const scoped=useMemo(()=>{
     if(!active||!suite)return null;
-    const projected=projectFamilyDraft(draft,active.name);
+    const projected=held&&held.base===draft&&held.type===active.name?held.edited:projectFamilyDraft(draft,active.name);
     if(!projected)return null;
     const source=familySource(suite,active);
     return {draft:projected,source,suite:preview(source,projected)};
-  },[draft,suite,active]);
+  },[draft,suite,active,held]);
   if(!active||!scoped)return <NormalizationMappingReview {...props}/>;
+  const pendingChange=Boolean(held&&held.base===draft&&held.type===active.name);
   const scopedSetDraft:Dispatch<SetStateAction<ParserDraft>>=next=>{
     const edited=typeof next==='function'?next(scoped.draft):next;
     if(edited===scoped.draft)return;
     const result=applyFamilyMappingEdit(draft,active.name,edited);
-    if(!result.ok){setNotice(REFUSAL[result.reason]??'The change could not be applied to this event type ('+result.reason+'). Nothing was changed.');return;}
-    setNotice('');
+    if(!result.ok){
+      setHeld({base:draft,type:active.name,edited});
+      setNotice(REFUSAL[result.reason]??'The change cannot be applied to this event type ('+result.reason+').');
+      return;
+    }
+    setHeld(null);setNotice('');
     setDraft(result.draft);
   };
   // The unparsed-text evidence of the whole sample, for the records of this type in their order.
   const exact=props.multipassSourceSample!==undefined&&props.multipassSourceSample===props.originalRawSample&&
     props.multipassResiduals?.length===suite?.events.length&&props.multipassRawEvents?.length===suite?.events.length;
   const shared=draft.mappings.length;
-  const own=(name:string)=>draft.eventProfiles?.variants.find(variant=>variant.name===name)?.mappings.length??0;
+  const own=(name:string)=>draft.eventProfiles?.variants.find(variant=>variant.name===name)?.mappings
+    .filter(rule=>!isCarriedFamilyMapping(rule)).length??0;
   return <>
     <section className="normalization-runtime-note" role="note" aria-label="Mapping by event type">
       <strong>This parser has {scopes.length} event types with their own field matches</strong>
@@ -55,7 +66,7 @@ function EventTypeScopedMappingReview(props:Props){
         {shared>0?' '+shared+' field match'+(shared===1?' is':'es are')+' shared by every event type; changing a shared match changes it for all of them.':''}</span>
       <label>Event type to map
         <select aria-label="Mapping event type" value={active.name} disabled={props.pending}
-          onChange={event=>{setChosen(event.target.value);setPicked(0);setNotice('');}}>
+          onChange={event=>{setChosen(event.target.value);setPicked(0);setNotice('');setHeld(null);}}>
           {scopes.map(scope=><option key={scope.name} value={scope.name}>
             {scope.name+' - '+scope.records.length+(scope.records.length===1?' record':' records')+', '+own(scope.name)+' own field match'+(own(scope.name)===1?'':'es')}
           </option>)}
@@ -65,6 +76,7 @@ function EventTypeScopedMappingReview(props:Props){
     </section>
     <NormalizationMappingReview {...props} key={active.name} draft={scoped.draft} setDraft={scopedSetDraft}
       suite={scoped.suite} selected={picked} setSelected={setPicked}
+      onContinue={pendingChange?()=>setNotice('A change on this screen is not applied yet: '+notice+' Finish or undo it before continuing.'):props.onContinue}
       originalRawSample={props.originalRawSample===undefined?undefined:scoped.source}
       multipassSourceSample={exact?scoped.source:undefined}
       multipassResiduals={exact?active.records.map(index=>props.multipassResiduals![index]!):undefined}

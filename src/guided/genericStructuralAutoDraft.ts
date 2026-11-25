@@ -456,7 +456,8 @@ function keepsNativeReading(raw:string,draft:ParserDraft,fields:Record<string,un
 const SPACE_TEXT_MODES:readonly string[]=['space_kv','syslog_prefix_kv','bsd_tagged_message','bsd_bracket_pid_message',
   'bsd_classic_pid_message'];
 const MESSAGE_MODES:readonly string[]=SPACE_TEXT_MODES.filter(mode=>mode.endsWith('_message'));
-const PAIR_AT_TOKEN_START=/(?:^|\s)[A-Za-z_][\w.-]*=\S/gu;
+// A pair starts the text or follows white space, a semicolon or a comma (final audit F-2: `a=1;b=2 word`).
+const PAIR_AT_TOKEN_START=/(?:^|[\s;,])[A-Za-z_][\w.-]*=\S/gu;
 
 /**
  * True when the reading keeps key=value pairs of the event as message text: it holds the text, it has not parsed
